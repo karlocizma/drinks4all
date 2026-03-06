@@ -1,12 +1,30 @@
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.core.security import get_password_hash
 from app.db.database import Base, SessionLocal, engine
 from app.models import Drink, Fridge, Team, User, UserRole
 
 
+def ensure_schema_compat() -> None:
+    # Keep existing Docker volumes usable when new columns are added.
+    statements = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_pending_approval BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS team_id INTEGER",
+        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS stock_quantity INTEGER",
+        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS low_stock_threshold INTEGER NOT NULL DEFAULT 5",
+        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS team_id INTEGER",
+        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS fridge_id INTEGER",
+        "ALTER TABLE consumptions ADD COLUMN IF NOT EXISTS team_id INTEGER",
+        "ALTER TABLE consumptions ADD COLUMN IF NOT EXISTS fridge_id INTEGER",
+    ]
+    with engine.begin() as conn:
+        for stmt in statements:
+            conn.execute(text(stmt))
+
+
 def main() -> None:
     Base.metadata.create_all(bind=engine)
+    ensure_schema_compat()
     db = SessionLocal()
     try:
         team = db.scalar(select(Team).where(Team.name == "Office"))
