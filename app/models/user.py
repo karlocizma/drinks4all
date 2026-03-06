@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import Boolean, DateTime, Enum, Integer, String
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -21,7 +21,10 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), nullable=False, default=UserRole.USER)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_pending_approval: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id"), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     consumptions = relationship("Consumption", back_populates="user")
     billing_periods = relationship("BillingPeriod", back_populates="user")
+    team = relationship("Team", back_populates="users")

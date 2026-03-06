@@ -4,8 +4,3 @@ __pycache__/
 .env
 test.db
 .pytest_cache/
-node_modules/
-dist/
-build/
-*.log
-.DS_Store

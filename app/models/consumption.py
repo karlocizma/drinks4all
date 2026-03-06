@@ -15,6 +15,8 @@ class Consumption(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     drink_id: Mapped[int] = mapped_column(ForeignKey("drinks.id"), nullable=False, index=True)
+    team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id"), nullable=True, index=True)
+    fridge_id: Mapped[int | None] = mapped_column(ForeignKey("fridges.id"), nullable=True, index=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     unit_price_at_time: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     consumed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)

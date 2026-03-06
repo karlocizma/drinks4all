@@ -12,6 +12,7 @@
     <div class="actions">
       <input type="month" id="month-picker" />
       <button id="refresh-summary">Refresh Summary</button>
+      <button id="undo-last">Undo Last</button>
       <button id="logout-btn">Logout</button>
     </div>
   </header>
@@ -20,6 +21,14 @@
     <section class="card">
       <h2>Monthly Summary</h2>
       <p id="summary">Loading...</p>
+      <a id="paypal-pay-btn" href="#" target="_blank" rel="noopener noreferrer" class="pay-btn" style="display:none;">Pay with PayPal</a>
+      <div id="breakdown"></div>
+      <h3>Change Password</h3>
+      <form id="password-form" class="grid compact-form">
+        <input id="old-password" type="password" placeholder="Old password" required />
+        <input id="new-password" type="password" placeholder="New password" required />
+        <button type="submit">Update Password</button>
+      </form>
     </section>
     <section>
       <h2>Available Drinks</h2>

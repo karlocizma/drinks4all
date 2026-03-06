@@ -1,23 +1,50 @@
 from decimal import Decimal
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class UserCreate(BaseModel):
     name: str
-    email: EmailStr
+    email: str
     password: str
     role: str = "USER"
+    team_id: int | None = None
 
 
 class UserUpdate(BaseModel):
     name: str | None = None
     is_active: bool | None = None
     role: str | None = None
+    team_id: int | None = None
 
 
 class PasswordReset(BaseModel):
     password: str
+
+
+class PasswordChange(BaseModel):
+    old_password: str
+    new_password: str
+
+
+class TeamCreate(BaseModel):
+    name: str
+
+
+class TeamUpdate(BaseModel):
+    name: str
+
+
+class FridgeCreate(BaseModel):
+    name: str
+    location: str | None = None
+    team_id: int | None = None
+
+
+class FridgeUpdate(BaseModel):
+    name: str
+    location: str | None = None
+    team_id: int | None = None
 
 
 class MonthlyUserReport(BaseModel):

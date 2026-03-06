@@ -5,9 +5,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 os.environ["SECRET_KEY"] = "test-secret"
+os.environ["ENABLE_SCHEDULER"] = "false"
+os.environ["TESTING"] = "true"
 
 from app.api.deps import get_db  # noqa: E402
 from app.db.database import Base  # noqa: E402
@@ -16,7 +19,12 @@ from app.models import User, UserRole  # noqa: E402
 from app.core.security import get_password_hash  # noqa: E402
 
 
-TEST_ENGINE = create_engine("sqlite:///./test.db", connect_args={"check_same_thread": False}, future=True)
+TEST_ENGINE = create_engine(
+    "sqlite+pysqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+    future=True,
+)
 TestingSessionLocal = sessionmaker(bind=TEST_ENGINE, autocommit=False, autoflush=False, future=True)
 
 
@@ -40,8 +48,11 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture()
 def client() -> Generator[TestClient, None, None]:
-    with TestClient(app) as c:
+    c = TestClient(app)
+    try:
         yield c
+    finally:
+        c.close()
 
 
 @pytest.fixture()

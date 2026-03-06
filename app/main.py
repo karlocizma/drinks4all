@@ -1,6 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from app.api import admin, auth, user, web
 from app.core.settings import settings
@@ -13,7 +14,11 @@ scheduler = BackgroundScheduler(timezone=settings.timezone)
 
 @app.on_event("startup")
 def startup() -> None:
+    if settings.testing:
+        return
+
     Base.metadata.create_all(bind=engine)
+    Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
 
     def scheduled_billing() -> None:
         db = SessionLocal()
@@ -22,22 +27,26 @@ def startup() -> None:
         finally:
             db.close()
 
-    scheduler.add_job(
-        scheduled_billing,
-        trigger="cron",
-        day=1,
-        hour=8,
-        minute=0,
-        id="monthly_billing",
-        replace_existing=True,
-    )
-    if not scheduler.running:
-        scheduler.start()
+    if settings.enable_scheduler:
+        scheduler.add_job(
+            scheduled_billing,
+            trigger="cron",
+            day=1,
+            hour=8,
+            minute=0,
+            id="monthly_billing",
+            replace_existing=True,
+        )
+        if not scheduler.running:
+            scheduler.start()
 
 
 @app.on_event("shutdown")
 def shutdown() -> None:
-    if scheduler.running:
+    if settings.testing:
+        return
+
+    if settings.enable_scheduler and scheduler.running:
         scheduler.shutdown(wait=False)
 
 

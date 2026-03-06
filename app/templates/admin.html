@@ -10,38 +10,88 @@
   <header class="topbar">
     <h1>Admin Console</h1>
     <div class="actions">
-      <input type="month" id="report-month" />
-      <button id="load-report">Load Report</button>
-      <button id="download-csv">CSV</button>
-      <button id="download-pdf">PDF</button>
-      <button id="run-billing">Run Billing</button>
       <button id="logout-btn">Logout</button>
     </div>
   </header>
 
-  <main class="container two-col">
+  <section class="container card report-panel">
+    <h2>📊 Reporting & Statistics</h2>
+    <div class="report-controls">
+      <input type="month" id="report-month" />
+      <button id="load-report">🔎 Load Report</button>
+      <button id="download-csv">⬇ CSV</button>
+      <button id="download-pdf">⬇ PDF</button>
+      <button id="run-billing">📨 Run Billing</button>
+    </div>
+    <div id="stats-cards" class="stats-cards"></div>
+    <div class="stats-grid">
+      <section class="card subtle">
+        <h3>👤 User Totals</h3>
+        <div id="stats-users" class="stats-list"></div>
+      </section>
+      <section class="card subtle">
+        <h3>🥤 Top Drinks</h3>
+        <div id="stats-drinks" class="stats-list"></div>
+      </section>
+      <section class="card subtle">
+        <h3>⚠ Low Stock</h3>
+        <div id="stats-stock" class="stats-list"></div>
+      </section>
+    </div>
+  </section>
+
+  <main class="container three-col">
     <section class="card">
-      <h2>Create User</h2>
-      <form id="user-form" class="grid">
-        <input placeholder="Name" id="user-name" required />
-        <input placeholder="Email" id="user-email" type="email" required />
-        <input placeholder="Password" id="user-password" type="password" required />
-        <select id="user-role"><option>USER</option><option>ADMIN</option></select>
-        <button type="submit">Create User</button>
+      <h2>👥 Teams & Fridges</h2>
+      <form id="team-form" class="grid compact-form">
+        <input placeholder="Team name" id="team-name" required />
+        <button type="submit">Create Team</button>
       </form>
-      <h3>Users</h3>
-      <div id="user-list"></div>
+      <form id="fridge-form" class="grid compact-form">
+        <input placeholder="Fridge name" id="fridge-name" required />
+        <input placeholder="Location" id="fridge-location" />
+        <select id="fridge-team"></select>
+        <button type="submit">Create Fridge</button>
+      </form>
+      <h3>Manage Teams</h3>
+      <div id="team-list"></div>
+      <h3>Manage Fridges</h3>
+      <div id="fridge-list"></div>
     </section>
 
     <section class="card">
-      <h2>Create Drink</h2>
-      <form id="drink-form" class="grid">
+      <h2>🧑 Users</h2>
+      <form id="user-form" class="grid compact-form">
+        <input placeholder="Name" id="user-name" required />
+        <input placeholder="Email" id="user-email" required />
+        <input placeholder="Password" id="user-password" type="password" required />
+        <select id="user-role"><option>USER</option><option>ADMIN</option></select>
+        <select id="user-team"></select>
+        <button type="submit">Create User</button>
+      </form>
+      <h3>Manage Users</h3>
+      <div id="user-list"></div>
+      <h3>Pending Approvals</h3>
+      <div id="pending-user-list"></div>
+    </section>
+
+    <section class="card">
+      <h2>🥤 Drinks</h2>
+      <form id="drink-form" class="grid compact-form">
         <input placeholder="Name" id="drink-name" required />
-        <input placeholder="Photo URL" id="drink-photo" type="url" required />
-        <input placeholder="Price" id="drink-price" type="number" step="0.01" required />
+        <input placeholder="Photo URL" id="drink-photo" />
+        <input type="file" id="drink-image-file" accept="image/*" />
+        <button type="button" id="upload-image">Upload Image</button>
+        <input placeholder="Price (EUR)" id="drink-price" type="number" step="0.01" required />
+        <input placeholder="Stock quantity (optional)" id="drink-stock" type="number" />
+        <input placeholder="Low stock threshold" id="drink-threshold" type="number" value="5" />
+        <select id="drink-team"></select>
+        <select id="drink-fridge"></select>
         <button type="submit">Create Drink</button>
       </form>
-      <h3>Report</h3>
+      <h3>Manage Drinks</h3>
+      <div id="drink-list"></div>
+      <h3>Raw Report JSON</h3>
       <pre id="report-output"></pre>
     </section>
   </main>
