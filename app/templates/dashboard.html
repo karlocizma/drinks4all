@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drinks4All - Dashboard</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>My Drinks</h1>
+    <div class="actions">
+      <input type="month" id="month-picker" />
+      <button id="refresh-summary">Refresh Summary</button>
+      <button id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Monthly Summary</h2>
+      <p id="summary">Loading...</p>
+    </section>
+    <section>
+      <h2>Available Drinks</h2>
+      <div id="drink-grid" class="drink-grid"></div>
+    </section>
+    <p id="error" class="error"></p>
+  </main>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drinks4All - Login</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <main class="container auth-shell">
+    <section class="card">
+      <h1>Drinks4All</h1>
+      <p>Sign in with your assigned account.</p>
+      <form id="login-form" class="grid">
+        <label>Email <input type="email" id="email" required /></label>
+        <label>Password <input type="password" id="password" required /></label>
+        <button type="submit">Login</button>
+      </form>
+      <p id="error" class="error"></p>
+    </section>
+  </main>
+  <script src="/static/js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drinks4All - Admin</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Admin Console</h1>
+    <div class="actions">
+      <input type="month" id="report-month" />
+      <button id="load-report">Load Report</button>
+      <button id="download-csv">CSV</button>
+      <button id="download-pdf">PDF</button>
+      <button id="run-billing">Run Billing</button>
+      <button id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="container two-col">
+    <section class="card">
+      <h2>Create User</h2>
+      <form id="user-form" class="grid">
+        <input placeholder="Name" id="user-name" required />
+        <input placeholder="Email" id="user-email" type="email" required />
+        <input placeholder="Password" id="user-password" type="password" required />
+        <select id="user-role"><option>USER</option><option>ADMIN</option></select>
+        <button type="submit">Create User</button>
+      </form>
+      <h3>Users</h3>
+      <div id="user-list"></div>
+    </section>
+
+    <section class="card">
+      <h2>Create Drink</h2>
+      <form id="drink-form" class="grid">
+        <input placeholder="Name" id="drink-name" required />
+        <input placeholder="Photo URL" id="drink-photo" type="url" required />
+        <input placeholder="Price" id="drink-price" type="number" step="0.01" required />
+        <button type="submit">Create Drink</button>
+      </form>
+      <h3>Report</h3>
+      <pre id="report-output"></pre>
+    </section>
+  </main>
+  <p id="error" class="error container"></p>
+  <script src="/static/js/admin.js"></script>
+</body>
+</html>

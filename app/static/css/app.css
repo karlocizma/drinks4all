@@ -1,0 +1,115 @@
+:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --panel-alt: #334155;
+  --text: #f8fafc;
+  --accent: #22d3ee;
+  --error: #f87171;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top, #1e293b, var(--bg));
+  min-height: 100vh;
+}
+
+.container {
+  width: min(1100px, 92%);
+  margin: 1.5rem auto;
+}
+
+.auth-shell {
+  display: grid;
+  place-content: center;
+  min-height: 85vh;
+}
+
+.card {
+  background: color-mix(in oklab, var(--panel) 90%, black);
+  border: 1px solid #475569;
+  padding: 1rem;
+  border-radius: 14px;
+}
+
+.grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+input, select, button {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #64748b;
+  font-size: 1rem;
+}
+
+button {
+  border: none;
+  background: var(--accent);
+  color: #082f49;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  padding: 1rem 4%;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.drink-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 1rem;
+}
+
+.drink {
+  background: var(--panel);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.drink img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.drink .content {
+  padding: 0.75rem;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1rem;
+}
+
+.error {
+  color: var(--error);
+  min-height: 1.2rem;
+}
+
+pre {
+  white-space: pre-wrap;
+  background: var(--panel-alt);
+  padding: 0.75rem;
+  border-radius: 8px;
+}
