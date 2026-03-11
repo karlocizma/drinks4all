@@ -8,6 +8,9 @@ const drinkConfirmModal = document.getElementById('drink-confirm-modal');
 const drinkConfirmText = document.getElementById('drink-confirm-text');
 const confirmDrinkBtn = document.getElementById('confirm-drink-btn');
 const cancelDrinkBtn = document.getElementById('cancel-drink-btn');
+const passwordModal = document.getElementById('password-modal');
+const openPasswordModalBtn = document.getElementById('open-password-modal');
+const cancelPasswordBtn = document.getElementById('cancel-password-btn');
 
 let pendingDrink = null;
 
@@ -72,6 +75,17 @@ function closeDrinkConfirm() {
   drinkConfirmModal.setAttribute('hidden', '');
 }
 
+function openPasswordModal() {
+  errorEl.textContent = '';
+  passwordModal.classList.remove('hidden');
+  passwordModal.removeAttribute('hidden');
+}
+
+function closePasswordModal() {
+  passwordModal.classList.add('hidden');
+  passwordModal.setAttribute('hidden', '');
+}
+
 async function loadDrinks() {
   const res = await fetch('/drinks');
   if (!res.ok) {
@@ -114,6 +128,15 @@ drinkConfirmModal?.addEventListener('click', (e) => {
   }
 });
 
+openPasswordModalBtn.addEventListener('click', openPasswordModal);
+cancelPasswordBtn.addEventListener('click', closePasswordModal);
+
+passwordModal?.addEventListener('click', (e) => {
+  if (e.target === passwordModal) {
+    closePasswordModal();
+  }
+});
+
 document.getElementById('undo-last').addEventListener('click', async () => {
   const res = await fetch('/consumptions/last', { method: 'DELETE' });
   if (!res.ok) {
@@ -141,6 +164,7 @@ document.getElementById('password-form').addEventListener('submit', async (e) =>
   document.getElementById('old-password').value = '';
   document.getElementById('new-password').value = '';
   errorEl.textContent = 'Password changed.';
+  closePasswordModal();
 });
 
 document.getElementById('logout-btn').addEventListener('click', async () => {
