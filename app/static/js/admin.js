@@ -10,12 +10,15 @@ const statsCards = document.getElementById('stats-cards');
 const statsUsers = document.getElementById('stats-users');
 const statsDrinks = document.getElementById('stats-drinks');
 const statsStock = document.getElementById('stats-stock');
+const rawReportPanel = document.getElementById('raw-report-panel');
+const toggleRawReportBtn = document.getElementById('toggle-raw-report');
 
 let teams = [];
 let fridges = [];
 let users = [];
 let pendingUsers = [];
 let drinks = [];
+let rawReportVisible = false;
 
 function currentMonth() {
   const now = new Date();
@@ -212,6 +215,17 @@ function renderStats(data) {
         )
         .join('')
     : '<p>All good. No low stock alerts.</p>';
+}
+
+function setRawReportVisibility(visible) {
+  rawReportVisible = visible;
+  rawReportPanel.classList.toggle('hidden', !visible);
+  if (visible) {
+    rawReportPanel.removeAttribute('hidden');
+  } else {
+    rawReportPanel.setAttribute('hidden', '');
+  }
+  toggleRawReportBtn.textContent = visible ? 'Hide Raw Report JSON' : 'Show Raw Report JSON';
 }
 
 document.getElementById('team-form').addEventListener('submit', async (e) => {
@@ -503,12 +517,17 @@ document.getElementById('run-billing').addEventListener('click', async () => {
   }
 });
 
+toggleRawReportBtn.addEventListener('click', () => {
+  setRawReportVisibility(!rawReportVisible);
+});
+
 document.getElementById('logout-btn').addEventListener('click', async () => {
   await fetch('/auth/logout', { method: 'POST' });
   window.location.href = '/';
 });
 
 monthInput.value = currentMonth();
+setRawReportVisibility(false);
 Promise.all([loadTeamsAndFridges(), loadUsers(), loadDrinks(), loadReport()]).catch(() => {
   window.location.href = '/';
 });

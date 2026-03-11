@@ -1,5 +1,8 @@
 const form = document.getElementById('login-form');
 const registerForm = document.getElementById('register-form');
+const registerModal = document.getElementById('register-modal');
+const openRegisterModalBtn = document.getElementById('open-register-modal');
+const closeRegisterModalBtn = document.getElementById('close-register-modal');
 const errorEl = document.getElementById('error');
 
 form.addEventListener('submit', async (e) => {
@@ -48,4 +51,24 @@ registerForm.addEventListener('submit', async (e) => {
 
   errorEl.textContent = 'Registration submitted. Wait for admin approval.';
   registerForm.reset();
+  closeRegisterModal();
+});
+
+function openRegisterModal() {
+  registerModal.classList.remove('hidden');
+  registerModal.removeAttribute('hidden');
+}
+
+function closeRegisterModal() {
+  registerModal.classList.add('hidden');
+  registerModal.setAttribute('hidden', '');
+}
+
+openRegisterModalBtn?.addEventListener('click', openRegisterModal);
+closeRegisterModalBtn?.addEventListener('click', closeRegisterModal);
+
+registerModal?.addEventListener('click', (e) => {
+  if (e.target === registerModal) {
+    closeRegisterModal();
+  }
 });

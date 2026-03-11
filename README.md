@@ -1,4 +1,4 @@
-# Drinks4All
+# ALBdrinks
 
 Drinks tracking web app with user login, admin management, inventory, monthly billing, SMTP reports, and mobile-compatible UI.
 
@@ -49,6 +49,7 @@ Edit [`.env`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/.env):
 - `BUYER_REPORT_EMAIL`
 
 For local Docker testing, `SMTP_HOST=mailhog` and `SMTP_PORT=1025`.
+`BUYER_REPORT_EMAIL` can contain one or more recipients separated by commas.
 
 ## PayPal button (manual payment link)
 Set in `.env`:
@@ -83,6 +84,86 @@ pip install -r requirements.txt
 docker compose up -d postgres mailhog
 python -m scripts.bootstrap
 uvicorn app.main:app --reload
+```
+
+## Automated Updates And Backups
+Local automation scripts are included in [`scripts/backup.sh`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/scripts/backup.sh), [`scripts/update.sh`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/scripts/update.sh), [`scripts/restore.sh`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/scripts/restore.sh), [`scripts/prune_backups.sh`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/scripts/prune_backups.sh), and [`scripts/check_env.sh`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/scripts/check_env.sh).
+
+Create a backup now:
+```bash
+bash scripts/backup.sh
+```
+
+Run a local update from your current checked-out code:
+```bash
+bash scripts/update.sh
+```
+
+Run an update that also pulls the latest git branch first:
+```bash
+bash scripts/update.sh --with-pull --branch main --keep 10
+```
+
+Restore the latest backup:
+```bash
+bash scripts/restore.sh latest
+```
+
+Check whether your current `.env` is missing new variables from `.env.example`:
+```bash
+bash scripts/check_env.sh
+```
+
+Backups are written to `backups/` and include:
+- PostgreSQL dump: `albdrinks-db-YYYYMMDD-HHMMSS.sql.gz`
+- Uploaded drink images: `albdrinks-uploads-YYYYMMDD-HHMMSS.tar.gz`
+- Environment backup: `albdrinks-env-YYYYMMDD-HHMMSS.env`
+
+The update script does this automatically:
+- creates a fresh backup
+- optionally pulls the selected git branch
+- compares `.env` with `.env.example` and stops if variables are missing
+- rebuilds and restarts Docker services
+- checks that the app responds on `http://localhost:8000/`
+- stops the app service if the rebuild or health check fails
+- prunes old backups
+
+## GitHub Actions Deploy
+Two workflows are included:
+- [`deploy.yml`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/.github/workflows/deploy.yml): deploy on push to `main` or manual dispatch
+- [`nightly-backup.yml`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/.github/workflows/nightly-backup.yml): nightly remote backup over SSH
+
+Required GitHub repository secrets:
+- `DEPLOY_HOST`: server hostname or IP
+- `DEPLOY_USER`: SSH user
+- `DEPLOY_SSH_KEY`: private SSH key for that server
+- `DEPLOY_PATH`: absolute path to the repo on the server
+- `DEPLOY_PORT`: optional SSH port, usually `22`
+- `BACKUP_KEEP_COUNT`: optional number of backups to keep, for example `10`
+
+Server prerequisites:
+- the repository is already cloned on the server at `DEPLOY_PATH`
+- Docker and `docker compose` are installed
+- the server can run the same `docker compose up --build -d` flow manually
+- the `.env` file already exists on the server
+
+Recommended first-time server setup:
+```bash
+git clone <your-repo-url> /path/to/albdrinks
+cd /path/to/albdrinks
+cp .env.example .env
+docker compose up --build -d
+```
+
+After that, pushing to `main` will trigger:
+- remote backup
+- git pull on the target branch
+- Docker rebuild and restart
+- HTTP health check
+
+If an update fails, the workflow exits with the latest backup path printed in the logs. You can then restore with:
+```bash
+bash scripts/restore.sh latest
 ```
 
 ## License

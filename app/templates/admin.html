@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Drinks4All - Admin</title>
+  <title>ALBdrinks - Admin</title>
   <link rel="stylesheet" href="/static/css/app.css" />
 </head>
 <body>
@@ -22,6 +22,9 @@
       <button id="download-csv">⬇ CSV</button>
       <button id="download-pdf">⬇ PDF</button>
       <button id="run-billing">📨 Run Billing</button>
+    </div>
+    <div class="report-tools">
+      <button id="toggle-raw-report" type="button" class="btn-secondary">Show Raw Report JSON</button>
     </div>
     <div id="stats-cards" class="stats-cards"></div>
     <div class="stats-grid">
@@ -91,8 +94,10 @@
       </form>
       <h3>Manage Drinks</h3>
       <div id="drink-list"></div>
-      <h3>Raw Report JSON</h3>
-      <pre id="report-output"></pre>
+      <section id="raw-report-panel" class="raw-report-panel hidden" hidden>
+        <h3>Raw Report JSON</h3>
+        <pre id="report-output"></pre>
+      </section>
     </section>
   </main>
   <p id="error" class="error container"></p>

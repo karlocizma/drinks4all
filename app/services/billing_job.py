@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.settings import settings
 from app.models import BillingStatus
-from app.services.emailer import send_email
+from app.services.emailer import parse_recipients, send_email
 from app.services.reporting import (
     low_stock_rows,
     monthly_user_report_rows,
@@ -73,11 +73,12 @@ def run_monthly_billing(db: Session, month: str | None = None) -> dict:
         + "\n\nLow stock alerts:\n"
         + ("\n".join(stock_lines) if stock_lines else "No low stock alerts")
     )
-    try:
-        send_email(settings.buyer_report_email, buyer_subject, buyer_body)
-        record_email_log(db, settings.buyer_report_email, buyer_subject, target_month, "SENT")
-    except Exception as exc:  # pragma: no cover
-        record_email_log(db, settings.buyer_report_email, buyer_subject, target_month, "FAILED", str(exc))
+    for recipient in parse_recipients(settings.buyer_report_email):
+        try:
+            send_email(recipient, buyer_subject, buyer_body)
+            record_email_log(db, recipient, buyer_subject, target_month, "SENT")
+        except Exception as exc:  # pragma: no cover
+            record_email_log(db, recipient, buyer_subject, target_month, "FAILED", str(exc))
 
     db.commit()
     return {

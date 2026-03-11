@@ -11,9 +11,41 @@ from app.db.database import get_db
 from app.models import Consumption, Drink, User
 from app.schemas.admin import PasswordChange
 from app.schemas.consumption import ConsumptionCreate, ConsumptionOut
+from app.services.emailer import parse_recipients, send_email
+from app.services.reporting import record_email_log
 from app.services.reporting import user_month_summary
 
 router = APIRouter(tags=["user"])
+
+
+def notify_low_stock(db: Session, drink: Drink, stock_before: int | None) -> None:
+    stock_after = drink.stock_quantity
+    if stock_before is None or stock_after is None:
+        return
+    if stock_before <= drink.low_stock_threshold or stock_after > drink.low_stock_threshold:
+        return
+
+    recipients = parse_recipients(settings.buyer_report_email)
+    if not recipients:
+        return
+
+    subject = f"Low stock alert: {drink.name}"
+    body = (
+        f"Drink: {drink.name}\n"
+        f"Current stock: {stock_after}\n"
+        f"Threshold: {drink.low_stock_threshold}\n"
+        f"Price: EUR {float(drink.unit_price):.2f}\n"
+        f"Fridge ID: {drink.fridge_id or '-'}\n"
+        f"Team ID: {drink.team_id or '-'}\n"
+    )
+    month = datetime.utcnow().strftime("%Y-%m")
+
+    for recipient in recipients:
+        try:
+            send_email(recipient, subject, body)
+            record_email_log(db, recipient, subject, month, "SENT")
+        except Exception as exc:  # pragma: no cover
+            record_email_log(db, recipient, subject, month, "FAILED", str(exc))
 
 
 @router.get("/drinks")
@@ -55,6 +87,7 @@ def add_consumption(
     if drink.stock_quantity is not None and drink.stock_quantity < payload.quantity:
         raise HTTPException(status_code=400, detail="Not enough stock")
 
+    stock_before = drink.stock_quantity
     if drink.stock_quantity is not None:
         drink.stock_quantity -= payload.quantity
 
@@ -70,6 +103,8 @@ def add_consumption(
     db.add(consumption)
     db.commit()
     db.refresh(consumption)
+    notify_low_stock(db, drink, stock_before)
+    db.commit()
     return ConsumptionOut.model_validate(consumption)
 
 

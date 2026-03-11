@@ -42,6 +42,12 @@ body {
   gap: 0.75rem;
 }
 
+.login-actions {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.65rem;
+}
+
 input,
 select,
 button {
@@ -119,6 +125,12 @@ button {
   display: grid;
   grid-template-columns: 1.2fr repeat(4, minmax(120px, 1fr));
   gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.report-tools {
+  display: flex;
+  justify-content: flex-end;
   margin-bottom: 0.8rem;
 }
 
@@ -246,6 +258,67 @@ pre {
   color: #1f2937;
   text-decoration: none;
   font-weight: 700;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(2, 6, 23, 0.72);
+}
+
+.modal-backdrop.hidden {
+  display: none;
+}
+
+.modal {
+  width: min(560px, 100%);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.modal-head h3 {
+  margin: 0;
+}
+
+.modal-head {
+  margin-bottom: 0.35rem;
+}
+
+.modal-close {
+  width: auto;
+  padding: 0.35rem 0.7rem;
+}
+
+.modal-actions {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.4rem;
+}
+
+.modal-actions button + button {
+  margin-top: 0.15rem;
+}
+
+.btn-secondary {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.raw-report-panel {
+  margin-top: 1rem;
 }
 
 @media (max-width: 680px) {

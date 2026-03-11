@@ -151,17 +151,21 @@ def build_pdf(rows: list[dict], month: str) -> bytes:
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", size=12)
-    pdf.cell(0, 10, f"Monthly Drinks Report {month}", new_x="LMARGIN", new_y="NEXT")
+    try:
+        pdf.cell(0, 10, f"Monthly Drinks Report {month}", new_x="LMARGIN", new_y="NEXT")
+    except TypeError:
+        # Fallback for older FPDF API that does not support new_x/new_y.
+        pdf.cell(0, 10, f"Monthly Drinks Report {month}", ln=1)
     pdf.ln(4)
     for row in rows:
         pdf.set_font("Helvetica", style="B", size=11)
-        pdf.multi_cell(0, 8, f"{row['name']} ({row['email']}) - total €{Decimal(row['total_amount']):.2f}")
+        pdf.multi_cell(0, 8, f"{row['name']} ({row['email']}) - total EUR {Decimal(row['total_amount']):.2f}")
         pdf.set_font("Helvetica", size=10)
         for drink in row["drinks"]:
             pdf.multi_cell(
                 0,
                 7,
-                f"  - {drink['drink_name']}: {drink['total_units']} x (€{Decimal(drink['total_amount']):.2f})",
+                f"  - {drink['drink_name']}: {drink['total_units']} x (EUR {Decimal(drink['total_amount']):.2f})",
             )
         pdf.ln(1)
 

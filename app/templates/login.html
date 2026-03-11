@@ -3,30 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Drinks4All - Login</title>
+  <title>ALBdrinks - Login</title>
   <link rel="stylesheet" href="/static/css/app.css" />
 </head>
 <body>
   <main class="container auth-shell">
     <section class="card">
-      <h1>Drinks4All</h1>
+      <h1>ALBdrinks</h1>
       <p>Sign in with your assigned account.</p>
       <form id="login-form" class="grid">
         <label>Email <input type="email" id="email" autocomplete="username" required /></label>
         <label>Password <input type="password" id="password" autocomplete="current-password" required /></label>
         <label><input type="checkbox" id="remember-me" /> Stay logged in (remember me)</label>
-        <button type="submit">Login</button>
       </form>
-      <h3>New User Registration</h3>
+      <div class="login-actions">
+        <button type="submit" form="login-form">Login</button>
+        <button type="button" id="open-register-modal">Create Account</button>
+      </div>
+      <p id="error" class="error"></p>
+    </section>
+  </main>
+
+  <div id="register-modal" class="modal-backdrop hidden" hidden>
+    <section class="card modal">
+      <div class="modal-head">
+        <h3>Create ALBdrinks Account</h3>
+      </div>
+      <p>Registration requires admin approval.</p>
       <form id="register-form" class="grid compact-form">
         <label>Name <input type="text" id="reg-name" required /></label>
         <label>Email <input type="email" id="reg-email" required /></label>
         <label>Password <input type="password" id="reg-password" required /></label>
-        <button type="submit">Register (Needs Admin Approval)</button>
+        <div class="modal-actions">
+          <button type="submit">Submit Registration</button>
+          <button type="button" id="close-register-modal" class="btn-secondary">Close</button>
+        </div>
       </form>
-      <p id="error" class="error"></p>
     </section>
-  </main>
+  </div>
+
   <script src="/static/js/login.js"></script>
 </body>
 </html>

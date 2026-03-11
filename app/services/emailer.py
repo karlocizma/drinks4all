@@ -4,6 +4,11 @@ from email.message import EmailMessage
 from app.core.settings import settings
 
 
+def parse_recipients(value: str) -> list[str]:
+    raw_parts = value.replace(";", ",").split(",")
+    return [part.strip() for part in raw_parts if part.strip()]
+
+
 def send_email(recipient: str, subject: str, body: str) -> None:
     msg = EmailMessage()
     msg["From"] = settings.smtp_sender

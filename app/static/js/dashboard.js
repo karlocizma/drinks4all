@@ -4,6 +4,12 @@ const breakdownEl = document.getElementById('breakdown');
 const grid = document.getElementById('drink-grid');
 const errorEl = document.getElementById('error');
 const paypalBtn = document.getElementById('paypal-pay-btn');
+const drinkConfirmModal = document.getElementById('drink-confirm-modal');
+const drinkConfirmText = document.getElementById('drink-confirm-text');
+const confirmDrinkBtn = document.getElementById('confirm-drink-btn');
+const cancelDrinkBtn = document.getElementById('cancel-drink-btn');
+
+let pendingDrink = null;
 
 function currentMonth() {
   const now = new Date();
@@ -53,6 +59,19 @@ async function addDrink(drinkId) {
   await loadSummary();
 }
 
+function openDrinkConfirm(drink) {
+  pendingDrink = drink;
+  drinkConfirmText.textContent = `Add 1x ${drink.name} for ${eur(drink.unit_price)}?`;
+  drinkConfirmModal.classList.remove('hidden');
+  drinkConfirmModal.removeAttribute('hidden');
+}
+
+function closeDrinkConfirm() {
+  pendingDrink = null;
+  drinkConfirmModal.classList.add('hidden');
+  drinkConfirmModal.setAttribute('hidden', '');
+}
+
 async function loadDrinks() {
   const res = await fetch('/drinks');
   if (!res.ok) {
@@ -74,10 +93,26 @@ async function loadDrinks() {
         <button data-id="${drink.id}">+1 Drink</button>
       </div>
     `;
-    card.querySelector('button').addEventListener('click', () => addDrink(drink.id));
+    card.querySelector('button').addEventListener('click', () => openDrinkConfirm(drink));
     grid.appendChild(card);
   });
 }
+
+confirmDrinkBtn.addEventListener('click', async () => {
+  if (!pendingDrink) return;
+  errorEl.textContent = '';
+  const drinkId = pendingDrink.id;
+  closeDrinkConfirm();
+  await addDrink(drinkId);
+});
+
+cancelDrinkBtn.addEventListener('click', closeDrinkConfirm);
+
+drinkConfirmModal?.addEventListener('click', (e) => {
+  if (e.target === drinkConfirmModal) {
+    closeDrinkConfirm();
+  }
+});
 
 document.getElementById('undo-last').addEventListener('click', async () => {
   const res = await fetch('/consumptions/last', { method: 'DELETE' });

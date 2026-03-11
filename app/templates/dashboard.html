@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Drinks4All - Dashboard</title>
+  <title>ALBdrinks - Dashboard</title>
   <link rel="stylesheet" href="/static/css/app.css" />
 </head>
 <body>
@@ -36,6 +36,20 @@
     </section>
     <p id="error" class="error"></p>
   </main>
+
+  <div id="drink-confirm-modal" class="modal-backdrop hidden" hidden>
+    <section class="card modal">
+      <div class="modal-head">
+        <h3>Confirm Drink</h3>
+      </div>
+      <p id="drink-confirm-text">Are you sure you want to add this drink?</p>
+      <div class="modal-actions">
+        <button type="button" id="confirm-drink-btn">Confirm +1</button>
+        <button type="button" id="cancel-drink-btn" class="btn-secondary">Cancel</button>
+      </div>
+    </section>
+  </div>
+
   <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
