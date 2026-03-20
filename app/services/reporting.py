@@ -19,6 +19,16 @@ def month_bounds(month: str) -> tuple[datetime, datetime]:
     return start, end
 
 
+def is_month_closed(db: Session, month: str) -> bool:
+    closed_count = db.scalar(
+        select(func.count(BillingPeriod.id)).where(
+            BillingPeriod.month == month,
+            BillingPeriod.closed_at.is_not(None),
+        )
+    )
+    return bool(closed_count)
+
+
 def user_month_summary(db: Session, user_id: int, month: str) -> dict:
     start, end = month_bounds(month)
     row = db.execute(
@@ -185,6 +195,18 @@ def upsert_billing_period(db: Session, user_id: int, month: str, total_amount: D
     else:
         period.total_amount = total_amount
     return period
+
+
+def close_billing_month(db: Session, month: str, rows: list[dict] | None = None) -> int:
+    user_rows = rows if rows is not None else monthly_user_report_rows(db, month)
+    closed = 0
+    now = datetime.utcnow()
+    for row in user_rows:
+        period = upsert_billing_period(db, row["user_id"], month, Decimal(row["total_amount"]))
+        if period.closed_at is None:
+            period.closed_at = now
+            closed += 1
+    return closed
 
 
 def record_email_log(db: Session, recipient: str, subject: str, month: str, status: str, error: str | None = None) -> None:

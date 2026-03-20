@@ -12,6 +12,7 @@ const statsDrinks = document.getElementById('stats-drinks');
 const statsStock = document.getElementById('stats-stock');
 const rawReportPanel = document.getElementById('raw-report-panel');
 const toggleRawReportBtn = document.getElementById('toggle-raw-report');
+const reportStatusEl = document.getElementById('report-status');
 
 let teams = [];
 let fridges = [];
@@ -215,6 +216,10 @@ function renderStats(data) {
         )
         .join('')
     : '<p>All good. No low stock alerts.</p>';
+
+  reportStatusEl.textContent = data.is_closed
+    ? `Month ${data.month} is closed. New drink entries for that month are blocked.`
+    : `Month ${data.month} is open. Running billing will close it safely.`;
 }
 
 function setRawReportVisibility(visible) {
@@ -509,9 +514,14 @@ document.getElementById('download-pdf').addEventListener('click', () => {
 document.getElementById('run-billing').addEventListener('click', async () => {
   const month = monthInput.value || currentMonth();
   try {
+    if (!confirm(`Run billing and close month ${month}? This does not delete data, but it blocks new drink entries for that month.`)) {
+      return;
+    }
     const res = await api(`/admin/run-billing?month=${month}`, { method: 'POST' });
     const data = await res.json();
     reportOut.textContent = JSON.stringify(data, null, 2);
+    errorEl.textContent = `Billing finished for ${data.month}. Closed periods: ${data.closed_periods}.`;
+    await loadReport();
   } catch (err) {
     errorEl.textContent = err.message;
   }

@@ -12,8 +12,7 @@ from app.models import Consumption, Drink, User
 from app.schemas.admin import PasswordChange
 from app.schemas.consumption import ConsumptionCreate, ConsumptionOut
 from app.services.emailer import parse_recipients, send_email
-from app.services.reporting import record_email_log
-from app.services.reporting import user_month_summary
+from app.services.reporting import is_month_closed, record_email_log, user_month_summary
 
 router = APIRouter(tags=["user"])
 
@@ -77,6 +76,10 @@ def add_consumption(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ConsumptionOut:
+    current_month = datetime.utcnow().strftime("%Y-%m")
+    if is_month_closed(db, current_month):
+        raise HTTPException(status_code=409, detail=f"Month {current_month} is closed for billing")
+
     drink = db.scalar(select(Drink).where(Drink.id == payload.drink_id, Drink.is_active.is_(True)))
     if drink is None:
         raise HTTPException(status_code=404, detail="Drink not found")

@@ -16,6 +16,7 @@ def ensure_schema_compat() -> None:
         "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS fridge_id INTEGER",
         "ALTER TABLE consumptions ADD COLUMN IF NOT EXISTS team_id INTEGER",
         "ALTER TABLE consumptions ADD COLUMN IF NOT EXISTS fridge_id INTEGER",
+        "ALTER TABLE billing_periods ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP",
     ]
     with engine.begin() as conn:
         for stmt in statements:

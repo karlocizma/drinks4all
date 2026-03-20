@@ -9,6 +9,7 @@ from app.core.settings import settings
 from app.models import BillingStatus
 from app.services.emailer import parse_recipients, send_email
 from app.services.reporting import (
+    close_billing_month,
     low_stock_rows,
     monthly_user_report_rows,
     record_email_log,
@@ -23,7 +24,7 @@ def previous_month(today: date | None = None) -> str:
     return f"{d.year}-{d.month - 1:02d}"
 
 
-def run_monthly_billing(db: Session, month: str | None = None) -> dict:
+def run_monthly_billing(db: Session, month: str | None = None, close_month: bool = False) -> dict:
     target_month = month or previous_month()
     rows = monthly_user_report_rows(db, target_month)
     low_stock = low_stock_rows(db)
@@ -80,6 +81,10 @@ def run_monthly_billing(db: Session, month: str | None = None) -> dict:
         except Exception as exc:  # pragma: no cover
             record_email_log(db, recipient, buyer_subject, target_month, "FAILED", str(exc))
 
+    closed_periods = 0
+    if close_month:
+        closed_periods = close_billing_month(db, target_month, rows)
+
     db.commit()
     return {
         "month": target_month,
@@ -87,4 +92,6 @@ def run_monthly_billing(db: Session, month: str | None = None) -> dict:
         "sent_users": sent_users,
         "failed_users": failed_users,
         "low_stock_count": len(low_stock),
+        "closed_periods": closed_periods,
+        "month_closed": close_month,
     }

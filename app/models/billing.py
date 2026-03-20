@@ -22,6 +22,7 @@ class BillingPeriod(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     total_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False, default=0)
     status: Mapped[BillingStatus] = mapped_column(Enum(BillingStatus), nullable=False, default=BillingStatus.OPEN)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("User", back_populates="billing_periods")

@@ -134,6 +134,11 @@ button {
   margin-bottom: 0.8rem;
 }
 
+.report-status {
+  margin: 0 0 0.8rem;
+  color: #cbd5e1;
+}
+
 .stats-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));

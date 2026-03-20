@@ -27,6 +27,7 @@ from app.services.billing_job import run_monthly_billing
 from app.services.reporting import (
     build_csv,
     build_pdf,
+    is_month_closed,
     low_stock_rows,
     monthly_drink_report_rows,
     monthly_user_report_rows,
@@ -388,6 +389,7 @@ def get_reports(
         return {
             "currency": "EUR",
             "month": month,
+            "is_closed": is_month_closed(db, month),
             "users": [
                 {
                     **row,
@@ -423,4 +425,4 @@ def run_billing_now(
     db: Session = Depends(get_db),
     _: User = Depends(require_admin),
 ) -> dict:
-    return run_monthly_billing(db, month)
+    return run_monthly_billing(db, month, close_month=True)

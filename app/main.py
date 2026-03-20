@@ -7,9 +7,27 @@ from app.api import admin, auth, user, web
 from app.core.settings import settings
 from app.db.database import Base, SessionLocal, engine
 from app.services.billing_job import run_monthly_billing
+from sqlalchemy import text
 
 app = FastAPI(title=settings.app_name)
 scheduler = BackgroundScheduler(timezone=settings.timezone)
+
+
+def ensure_schema_compat() -> None:
+    statements = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_pending_approval BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS team_id INTEGER",
+        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS stock_quantity INTEGER",
+        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS low_stock_threshold INTEGER NOT NULL DEFAULT 5",
+        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS team_id INTEGER",
+        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS fridge_id INTEGER",
+        "ALTER TABLE consumptions ADD COLUMN IF NOT EXISTS team_id INTEGER",
+        "ALTER TABLE consumptions ADD COLUMN IF NOT EXISTS fridge_id INTEGER",
+        "ALTER TABLE billing_periods ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP",
+    ]
+    with engine.begin() as conn:
+        for stmt in statements:
+            conn.execute(text(stmt))
 
 
 @app.on_event("startup")
@@ -18,12 +36,13 @@ def startup() -> None:
         return
 
     Base.metadata.create_all(bind=engine)
+    ensure_schema_compat()
     Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
 
     def scheduled_billing() -> None:
         db = SessionLocal()
         try:
-            run_monthly_billing(db)
+            run_monthly_billing(db, close_month=True)
         finally:
             db.close()
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.models import Consumption, Drink
+from app.models import BillingPeriod, Consumption, Drink
 
 
 def test_admin_can_create_drink_and_report(client, admin_user, normal_user, db):
@@ -68,3 +68,39 @@ def test_run_billing_records_email_logs(client, admin_user, normal_user, db, mon
     assert run.status_code == 200
     assert run.json()["sent_users"] >= 1
     assert len(sent) >= 2
+
+
+def test_manual_billing_closes_month_and_report_marks_it_closed(client, admin_user, normal_user, db, monkeypatch):
+    drink = Drink(name="Water", photo_url="https://example.com/water.jpg", unit_price=1.0, is_active=True)
+    db.add(drink)
+    db.commit()
+    db.refresh(drink)
+
+    db.add(
+        Consumption(
+            user_id=normal_user.id,
+            drink_id=drink.id,
+            quantity=1,
+            unit_price_at_time=1.0,
+            consumed_at=datetime(2026, 3, 5, 10, 0, 0),
+        )
+    )
+    db.commit()
+
+    monkeypatch.setattr("app.services.billing_job.send_email", lambda recipient, subject, body: None)
+
+    login_admin = client.post("/auth/login", json={"email": admin_user.email, "password": "admin123"})
+    assert login_admin.status_code == 200
+
+    run = client.post("/admin/run-billing?month=2026-03")
+    assert run.status_code == 200
+    assert run.json()["month_closed"] is True
+    assert run.json()["closed_periods"] >= 1
+
+    period = db.query(BillingPeriod).filter(BillingPeriod.month == "2026-03").first()
+    assert period is not None
+    assert period.closed_at is not None
+
+    report = client.get("/admin/reports?month=2026-03")
+    assert report.status_code == 200
+    assert report.json()["is_closed"] is True

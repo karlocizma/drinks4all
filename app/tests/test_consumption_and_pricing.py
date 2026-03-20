@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from app.models import Drink
 from app.core.settings import settings
+from app.services.reporting import close_billing_month, user_month_summary
 
 
 def test_consumption_adds_units_and_total(client, normal_user, db):
@@ -75,3 +78,34 @@ def test_low_stock_email_sent_once_when_threshold_is_crossed(client, normal_user
     assert len(sent) == 1
     assert sent[0][0] == "stock@test.local"
     assert "Low stock alert" in sent[0][1]
+
+
+def test_consumption_is_blocked_for_closed_month(client, normal_user, db):
+    drink = Drink(name="Cola", photo_url="https://example.com/cola.jpg", unit_price=2.5, is_active=True)
+    db.add(drink)
+    db.commit()
+    db.refresh(drink)
+
+    summary = user_month_summary(db, normal_user.id, datetime.utcnow().strftime("%Y-%m"))
+    close_billing_month(
+        db,
+        datetime.utcnow().strftime("%Y-%m"),
+        [
+            {
+                "user_id": normal_user.id,
+                "name": normal_user.name,
+                "email": normal_user.email,
+                "total_units": summary["total_units"],
+                "total_amount": summary["total_amount"],
+                "drinks": summary["drinks"],
+            }
+        ],
+    )
+    db.commit()
+
+    login = client.post("/auth/login", json={"email": normal_user.email, "password": "user123"})
+    assert login.status_code == 200
+
+    add = client.post("/consumptions", json={"drink_id": drink.id, "quantity": 1})
+    assert add.status_code == 409
+    assert "closed for billing" in add.text
