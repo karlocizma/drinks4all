@@ -323,6 +323,11 @@ pre {
   color: #e2e8f0;
 }
 
+.btn-danger {
+  background: #ef4444;
+  color: #fff7ed;
+}
+
 .hidden {
   display: none !important;
 }

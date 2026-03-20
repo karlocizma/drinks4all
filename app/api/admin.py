@@ -31,6 +31,7 @@ from app.services.reporting import (
     low_stock_rows,
     monthly_drink_report_rows,
     monthly_user_report_rows,
+    reset_billing_month,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -426,3 +427,14 @@ def run_billing_now(
     _: User = Depends(require_admin),
 ) -> dict:
     return run_monthly_billing(db, month, close_month=True)
+
+
+@router.post("/reset-month")
+def reset_month(
+    month: str,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> dict:
+    result = reset_billing_month(db, month)
+    db.commit()
+    return result

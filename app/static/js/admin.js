@@ -527,6 +527,25 @@ document.getElementById('run-billing').addEventListener('click', async () => {
   }
 });
 
+document.getElementById('reset-month').addEventListener('click', async () => {
+  const month = monthInput.value || currentMonth();
+  const confirmation = prompt(`Type RESET ${month} to delete all billing data and consumptions for that month.`);
+  if (confirmation !== `RESET ${month}`) {
+    errorEl.textContent = 'Month reset cancelled.';
+    return;
+  }
+  try {
+    const res = await api(`/admin/reset-month?month=${month}`, { method: 'POST' });
+    const data = await res.json();
+    errorEl.textContent = `Month ${data.month} reset. Deleted consumptions: ${data.deleted_consumptions}. Restored stock units: ${data.restored_stock_units}.`;
+    reportOut.textContent = JSON.stringify(data, null, 2);
+    await loadDrinks();
+    await loadReport();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+});
+
 toggleRawReportBtn.addEventListener('click', () => {
   setRawReportVisibility(!rawReportVisible);
 });

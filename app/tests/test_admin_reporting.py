@@ -104,3 +104,45 @@ def test_manual_billing_closes_month_and_report_marks_it_closed(client, admin_us
     report = client.get("/admin/reports?month=2026-03")
     assert report.status_code == 200
     assert report.json()["is_closed"] is True
+
+
+def test_reset_month_deletes_month_data_and_restores_stock(client, admin_user, normal_user, db):
+    drink = Drink(
+        name="Cola",
+        photo_url="https://example.com/cola.jpg",
+        unit_price=2.0,
+        stock_quantity=8,
+        is_active=True,
+    )
+    db.add(drink)
+    db.commit()
+    db.refresh(drink)
+
+    db.add(
+        Consumption(
+            user_id=normal_user.id,
+            drink_id=drink.id,
+            quantity=2,
+            unit_price_at_time=2.0,
+            consumed_at=datetime(2026, 3, 6, 10, 0, 0),
+        )
+    )
+    drink.stock_quantity = 6
+    db.commit()
+
+    login_admin = client.post("/auth/login", json={"email": admin_user.email, "password": "admin123"})
+    assert login_admin.status_code == 200
+
+    reset = client.post("/admin/reset-month?month=2026-03")
+    assert reset.status_code == 200
+    payload = reset.json()
+    assert payload["deleted_consumptions"] == 1
+    assert payload["restored_stock_units"] == 2
+
+    db.refresh(drink)
+    assert drink.stock_quantity == 8
+
+    report = client.get("/admin/reports?month=2026-03")
+    assert report.status_code == 200
+    assert report.json()["overall_total"] == 0.0
+    assert report.json()["is_closed"] is False

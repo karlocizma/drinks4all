@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from io import StringIO
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.models import BillingPeriod, BillingStatus, Consumption, Drink, EmailLog, User, UserRole
@@ -207,6 +207,38 @@ def close_billing_month(db: Session, month: str, rows: list[dict] | None = None)
             period.closed_at = now
             closed += 1
     return closed
+
+
+def reset_billing_month(db: Session, month: str) -> dict:
+    start, end = month_bounds(month)
+    consumptions = db.scalars(
+        select(Consumption).where(
+            Consumption.consumed_at >= start,
+            Consumption.consumed_at < end,
+        )
+    ).all()
+
+    restored_stock = 0
+    for entry in consumptions:
+        drink = db.get(Drink, entry.drink_id)
+        if drink is not None and drink.stock_quantity is not None:
+            drink.stock_quantity += entry.quantity
+            restored_stock += entry.quantity
+
+    consumption_count = len(consumptions)
+    for entry in consumptions:
+        db.delete(entry)
+
+    deleted_periods = db.query(BillingPeriod).filter(BillingPeriod.month == month).delete()
+    deleted_logs = db.query(EmailLog).filter(EmailLog.month == month).delete()
+
+    return {
+        "month": month,
+        "deleted_consumptions": consumption_count,
+        "deleted_billing_periods": deleted_periods,
+        "deleted_email_logs": deleted_logs,
+        "restored_stock_units": restored_stock,
+    }
 
 
 def record_email_log(db: Session, recipient: str, subject: str, month: str, status: str, error: str | None = None) -> None:
