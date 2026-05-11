@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import and_, desc, select
+from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -34,8 +34,6 @@ def notify_low_stock(db: Session, drink: Drink, stock_before: int | None) -> Non
         f"Current stock: {stock_after}\n"
         f"Threshold: {drink.low_stock_threshold}\n"
         f"Price: EUR {float(drink.unit_price):.2f}\n"
-        f"Fridge ID: {drink.fridge_id or '-'}\n"
-        f"Team ID: {drink.team_id or '-'}\n"
     )
     month = datetime.utcnow().strftime("%Y-%m")
 
@@ -49,11 +47,7 @@ def notify_low_stock(db: Session, drink: Drink, stock_before: int | None) -> Non
 
 @router.get("/drinks")
 def list_drinks(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> list[dict]:
-    filters = [Drink.is_active.is_(True)]
-    if current_user.team_id is not None:
-        filters.append((Drink.team_id == current_user.team_id) | (Drink.team_id.is_(None)))
-
-    drinks = db.scalars(select(Drink).where(and_(*filters)).order_by(Drink.name.asc())).all()
+    drinks = db.scalars(select(Drink).where(Drink.is_active.is_(True)).order_by(Drink.name.asc())).all()
     return [
         {
             "id": d.id,
@@ -62,8 +56,6 @@ def list_drinks(db: Session = Depends(get_db), current_user: User = Depends(get_
             "unit_price": float(d.unit_price),
             "stock_quantity": d.stock_quantity,
             "low_stock_threshold": d.low_stock_threshold,
-            "team_id": d.team_id,
-            "fridge_id": d.fridge_id,
             "is_active": d.is_active,
         }
         for d in drinks
@@ -97,8 +89,6 @@ def add_consumption(
     consumption = Consumption(
         user_id=current_user.id,
         drink_id=drink.id,
-        team_id=current_user.team_id,
-        fridge_id=drink.fridge_id,
         quantity=payload.quantity,
         unit_price_at_time=drink.unit_price,
         consumed_at=datetime.utcnow(),
