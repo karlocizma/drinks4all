@@ -146,3 +146,46 @@ def test_reset_month_deletes_month_data_and_restores_stock(client, admin_user, n
     assert report.status_code == 200
     assert report.json()["overall_total"] == 0.0
     assert report.json()["is_closed"] is False
+
+
+def test_update_drink_stock_to_unlimited(client, admin_user, db):
+    login = client.post("/auth/login", json={"email": admin_user.email, "password": "admin123"})
+    assert login.status_code == 200
+
+    create = client.post(
+        "/admin/drinks",
+        json={"name": "Cola", "photo_url": "https://example.com/cola.jpg", "unit_price": 1.5, "stock_quantity": 10},
+    )
+    assert create.status_code == 200
+    drink_id = create.json()["id"]
+
+    update = client.put(f"/admin/drinks/{drink_id}", json={"stock_quantity": None})
+    assert update.status_code == 200
+
+    drinks = client.get("/admin/drinks")
+    assert drinks.status_code == 200
+    drink = next(d for d in drinks.json() if d["id"] == drink_id)
+    assert drink["stock_quantity"] is None
+
+
+def test_all_active_drinks_visible_to_any_user(client, admin_user, normal_user, db):
+    login_admin = client.post("/auth/login", json={"email": admin_user.email, "password": "admin123"})
+    assert login_admin.status_code == 200
+
+    client.post(
+        "/admin/drinks",
+        json={"name": "Club Mate", "photo_url": "https://example.com/club-mate.jpg", "unit_price": 1.5},
+    )
+    client.post(
+        "/admin/drinks",
+        json={"name": "Cola", "photo_url": "https://example.com/cola.jpg", "unit_price": 1.2},
+    )
+
+    login_user = client.post("/auth/login", json={"email": normal_user.email, "password": "user123"})
+    assert login_user.status_code == 200
+
+    drinks = client.get("/drinks")
+    assert drinks.status_code == 200
+    names = [d["name"] for d in drinks.json()]
+    assert "Club Mate" in names
+    assert "Cola" in names
