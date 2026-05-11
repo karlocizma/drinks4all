@@ -16,14 +16,16 @@ scheduler = BackgroundScheduler(timezone=settings.timezone)
 def ensure_schema_compat() -> None:
     statements = [
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_pending_approval BOOLEAN NOT NULL DEFAULT FALSE",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS team_id INTEGER",
+        "ALTER TABLE billing_periods ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP",
         "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS stock_quantity INTEGER",
         "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS low_stock_threshold INTEGER NOT NULL DEFAULT 5",
-        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS team_id INTEGER",
-        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS fridge_id INTEGER",
-        "ALTER TABLE consumptions ADD COLUMN IF NOT EXISTS team_id INTEGER",
-        "ALTER TABLE consumptions ADD COLUMN IF NOT EXISTS fridge_id INTEGER",
-        "ALTER TABLE billing_periods ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP",
+        "ALTER TABLE consumptions DROP COLUMN IF EXISTS team_id",
+        "ALTER TABLE consumptions DROP COLUMN IF EXISTS fridge_id",
+        "ALTER TABLE drinks DROP COLUMN IF EXISTS team_id",
+        "ALTER TABLE drinks DROP COLUMN IF EXISTS fridge_id",
+        "ALTER TABLE users DROP COLUMN IF EXISTS team_id",
+        "DROP TABLE IF EXISTS fridges CASCADE",
+        "DROP TABLE IF EXISTS teams CASCADE",
     ]
     with engine.begin() as conn:
         for stmt in statements:

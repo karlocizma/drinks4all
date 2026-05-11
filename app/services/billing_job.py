@@ -83,6 +83,7 @@ def run_monthly_billing(db: Session, month: str | None = None, close_month: bool
 
     closed_periods = 0
     if close_month:
+        db.flush()
         closed_periods = close_billing_month(db, target_month, rows)
 
     db.commit()

@@ -17,7 +17,8 @@ def test_consumption_adds_units_and_total(client, normal_user, db):
     add = client.post("/consumptions", json={"drink_id": drink.id, "quantity": 2})
     assert add.status_code == 200
 
-    summary = client.get("/me/summary?month=2026-03")
+    current_month = datetime.utcnow().strftime("%Y-%m")
+    summary = client.get(f"/me/summary?month={current_month}")
     assert summary.status_code == 200
     assert summary.json()["total_units"] == 2
     assert summary.json()["total_amount"] == 5.0

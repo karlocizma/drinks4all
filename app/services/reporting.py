@@ -96,17 +96,26 @@ def monthly_user_report_rows(db: Session, month: str) -> list[dict]:
 
 def monthly_drink_report_rows(db: Session, month: str) -> list[dict]:
     start, end = month_bounds(month)
+
+    sub = (
+        select(
+            Consumption.drink_id,
+            func.sum(Consumption.quantity).label("units"),
+            func.sum(Consumption.quantity * Consumption.unit_price_at_time).label("amount"),
+        )
+        .where(Consumption.consumed_at >= start, Consumption.consumed_at < end)
+        .group_by(Consumption.drink_id)
+        .subquery()
+    )
+
     rows = db.execute(
         select(
             Drink.id,
             Drink.name,
-            func.coalesce(func.sum(Consumption.quantity), 0).label("units"),
-            func.coalesce(func.sum(Consumption.quantity * Consumption.unit_price_at_time), 0).label("amount"),
+            func.coalesce(sub.c.units, 0).label("units"),
+            func.coalesce(sub.c.amount, 0).label("amount"),
         )
-        .join(Consumption, Consumption.drink_id == Drink.id, isouter=True)
-        .where((Consumption.consumed_at >= start) | (Consumption.id.is_(None)))
-        .where((Consumption.consumed_at < end) | (Consumption.id.is_(None)))
-        .group_by(Drink.id, Drink.name)
+        .outerjoin(sub, sub.c.drink_id == Drink.id)
         .order_by(Drink.name.asc())
     ).all()
 
