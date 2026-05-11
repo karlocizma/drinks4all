@@ -67,6 +67,7 @@ function renderPendingUsers() {
       </div>
     </div>
   `).join('') || '<p style="color:var(--fg-muted);">No pending approvals</p>';
+  lucide.createIcons();
 }
 
 function renderDrinks() {
@@ -74,7 +75,7 @@ function renderDrinks() {
     const stockClass = d.stock_quantity == null ? 'inf' : (d.stock_quantity <= d.low_stock_threshold ? 'low' : 'ok');
     const stockLabel = d.stock_quantity == null ? '∞' : d.stock_quantity;
     return `
-      <div class="drink-admin-row">
+      <div class="drink-admin-row" style="opacity:${d.is_active ? 1 : 0.55}">
         ${d.photo_url ? `<img src="${d.photo_url}" alt="${d.name}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;">` : '<div style="width:40px;height:40px;background:var(--bg2);border-radius:6px;flex-shrink:0;"></div>'}
         <div style="flex:1;min-width:0;">
           <strong>${d.name}</strong>
@@ -212,7 +213,6 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
         email: document.getElementById('user-email').value,
         password: document.getElementById('user-password').value,
         role: document.getElementById('user-role').value,
-        team_id: null,
       }),
     });
     e.target.reset();
@@ -232,12 +232,10 @@ document.getElementById('drink-create-form').addEventListener('submit', async (e
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: document.getElementById('create-name').value,
-        photo_url: document.getElementById('create-photo-url').value || null,
+        photo_url: document.getElementById('create-photo-url').value || '',
         unit_price: Number(document.getElementById('create-price').value),
         stock_quantity: document.getElementById('create-stock').value ? Number(document.getElementById('create-stock').value) : null,
         low_stock_threshold: Number(document.getElementById('create-threshold').value || 5),
-        team_id: null,
-        fridge_id: null,
         is_active: true,
       }),
     });
@@ -367,13 +365,11 @@ document.getElementById('drink-save-btn').addEventListener('click', async () => 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: document.getElementById('edit-name').value,
-        photo_url: document.getElementById('edit-photo-url').value || null,
+        photo_url: document.getElementById('edit-photo-url').value || '',
         unit_price: Number(document.getElementById('edit-price').value),
         stock_quantity: document.getElementById('edit-stock').value !== '' ? Number(document.getElementById('edit-stock').value) : null,
         low_stock_threshold: Number(document.getElementById('edit-threshold').value || 5),
         is_active: document.getElementById('edit-active').checked,
-        team_id: null,
-        fridge_id: null,
       }),
     });
     closeDrinkModal();
@@ -463,7 +459,6 @@ document.getElementById('user-save-btn').addEventListener('click', async () => {
         name: document.getElementById('edit-user-name').value,
         role: document.getElementById('edit-user-role').value,
         is_active: document.getElementById('edit-user-active').checked,
-        team_id: null,
       }),
     });
     closeUserModal();
