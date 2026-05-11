@@ -12,16 +12,8 @@ from app.api.deps import require_admin
 from app.core.security import get_password_hash
 from app.core.settings import settings
 from app.db.database import get_db
-from app.models import Drink, Fridge, Team, User, UserRole
-from app.schemas.admin import (
-    FridgeCreate,
-    FridgeUpdate,
-    PasswordReset,
-    TeamCreate,
-    TeamUpdate,
-    UserCreate,
-    UserUpdate,
-)
+from app.models import Drink, User, UserRole
+from app.schemas.admin import PasswordReset, UserCreate, UserUpdate
 from app.schemas.drink import DrinkCreate, DrinkUpdate
 from app.services.billing_job import run_monthly_billing
 from app.services.reporting import (
@@ -37,20 +29,6 @@ from app.services.reporting import (
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-def ensure_team_exists(db: Session, team_id: int | None) -> None:
-    if team_id is None:
-        return
-    if db.scalar(select(Team).where(Team.id == team_id)) is None:
-        raise HTTPException(status_code=404, detail="Team not found")
-
-
-def ensure_fridge_exists(db: Session, fridge_id: int | None) -> None:
-    if fridge_id is None:
-        return
-    if db.scalar(select(Fridge).where(Fridge.id == fridge_id)) is None:
-        raise HTTPException(status_code=404, detail="Fridge not found")
-
-
 @router.get("/users")
 def list_users(db: Session = Depends(get_db), _: User = Depends(require_admin)) -> list[dict]:
     users = db.scalars(select(User).order_by(User.created_at.asc())).all()
@@ -62,7 +40,6 @@ def list_users(db: Session = Depends(get_db), _: User = Depends(require_admin)) 
             "role": u.role.value,
             "is_active": u.is_active,
             "is_pending_approval": u.is_pending_approval,
-            "team_id": u.team_id,
         }
         for u in users
     ]
@@ -74,8 +51,6 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db), _: User = De
     if existing:
         raise HTTPException(status_code=409, detail="Email already exists")
 
-    ensure_team_exists(db, payload.team_id)
-
     role = UserRole.ADMIN if payload.role.upper() == UserRole.ADMIN.value else UserRole.USER
     user = User(
         name=payload.name,
@@ -84,7 +59,6 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db), _: User = De
         role=role,
         is_active=True,
         is_pending_approval=False,
-        team_id=payload.team_id,
     )
     db.add(user)
     db.commit()
@@ -98,7 +72,7 @@ def list_pending_users(db: Session = Depends(get_db), _: User = Depends(require_
         select(User).where(User.is_pending_approval.is_(True)).order_by(User.created_at.asc())
     ).all()
     return [
-        {"id": u.id, "name": u.name, "email": u.email, "team_id": u.team_id, "created_at": str(u.created_at)}
+        {"id": u.id, "name": u.name, "email": u.email, "created_at": str(u.created_at)}
         for u in users
     ]
 
@@ -133,9 +107,6 @@ def update_user(
             user.is_pending_approval = False
     if payload.role is not None:
         user.role = UserRole.ADMIN if payload.role.upper() == UserRole.ADMIN.value else UserRole.USER
-    if payload.team_id is not None:
-        ensure_team_exists(db, payload.team_id)
-        user.team_id = payload.team_id
 
     db.commit()
     return {"ok": True}
@@ -165,102 +136,8 @@ def reset_user_password(
     user = db.scalar(select(User).where(User.id == user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
     user.password_hash = get_password_hash(payload.password)
     db.commit()
-    return {"ok": True}
-
-
-@router.get("/teams")
-def list_teams(db: Session = Depends(get_db), _: User = Depends(require_admin)) -> list[dict]:
-    teams = db.scalars(select(Team).order_by(Team.name.asc())).all()
-    return [{"id": t.id, "name": t.name} for t in teams]
-
-
-@router.post("/teams")
-def create_team(payload: TeamCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> dict:
-    existing = db.scalar(select(Team).where(Team.name == payload.name))
-    if existing:
-        raise HTTPException(status_code=409, detail="Team already exists")
-    team = Team(name=payload.name)
-    db.add(team)
-    db.commit()
-    db.refresh(team)
-    return {"id": team.id, "name": team.name}
-
-
-@router.put("/teams/{team_id}")
-def update_team(team_id: int, payload: TeamUpdate, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> dict:
-    team = db.scalar(select(Team).where(Team.id == team_id))
-    if not team:
-        raise HTTPException(status_code=404, detail="Team not found")
-    team.name = payload.name
-    db.commit()
-    return {"ok": True}
-
-
-@router.delete("/teams/{team_id}")
-def delete_team(team_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> dict:
-    team = db.scalar(select(Team).where(Team.id == team_id))
-    if not team:
-        raise HTTPException(status_code=404, detail="Team not found")
-    db.delete(team)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=409, detail="Cannot delete team with linked users/fridges/drinks")
-    return {"ok": True}
-
-
-@router.get("/fridges")
-def list_fridges(db: Session = Depends(get_db), _: User = Depends(require_admin)) -> list[dict]:
-    fridges = db.scalars(select(Fridge).order_by(Fridge.name.asc())).all()
-    return [
-        {"id": f.id, "name": f.name, "location": f.location, "team_id": f.team_id}
-        for f in fridges
-    ]
-
-
-@router.post("/fridges")
-def create_fridge(payload: FridgeCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> dict:
-    ensure_team_exists(db, payload.team_id)
-    fridge = Fridge(name=payload.name, location=payload.location, team_id=payload.team_id)
-    db.add(fridge)
-    db.commit()
-    db.refresh(fridge)
-    return {"id": fridge.id, "name": fridge.name}
-
-
-@router.put("/fridges/{fridge_id}")
-def update_fridge(
-    fridge_id: int,
-    payload: FridgeUpdate,
-    db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
-) -> dict:
-    fridge = db.scalar(select(Fridge).where(Fridge.id == fridge_id))
-    if not fridge:
-        raise HTTPException(status_code=404, detail="Fridge not found")
-    ensure_team_exists(db, payload.team_id)
-    fridge.name = payload.name
-    fridge.location = payload.location
-    fridge.team_id = payload.team_id
-    db.commit()
-    return {"ok": True}
-
-
-@router.delete("/fridges/{fridge_id}")
-def delete_fridge(fridge_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> dict:
-    fridge = db.scalar(select(Fridge).where(Fridge.id == fridge_id))
-    if not fridge:
-        raise HTTPException(status_code=404, detail="Fridge not found")
-    db.delete(fridge)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=409, detail="Cannot delete fridge with linked drinks/consumptions")
     return {"ok": True}
 
 
@@ -275,8 +152,6 @@ def list_all_drinks(db: Session = Depends(get_db), _: User = Depends(require_adm
             "unit_price": float(d.unit_price),
             "stock_quantity": d.stock_quantity,
             "low_stock_threshold": d.low_stock_threshold,
-            "team_id": d.team_id,
-            "fridge_id": d.fridge_id,
             "is_active": d.is_active,
         }
         for d in drinks
@@ -308,17 +183,12 @@ async def upload_drink_image(
 
 @router.post("/drinks")
 def create_drink(payload: DrinkCreate, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> dict:
-    ensure_team_exists(db, payload.team_id)
-    ensure_fridge_exists(db, payload.fridge_id)
-
     drink = Drink(
         name=payload.name,
         photo_url=str(payload.photo_url),
         unit_price=payload.unit_price,
         stock_quantity=payload.stock_quantity,
         low_stock_threshold=payload.low_stock_threshold,
-        team_id=payload.team_id,
-        fridge_id=payload.fridge_id,
         is_active=payload.is_active,
     )
     db.add(drink)
@@ -344,16 +214,10 @@ def update_drink(
         drink.photo_url = str(payload.photo_url)
     if payload.unit_price is not None:
         drink.unit_price = payload.unit_price
-    if payload.stock_quantity is not None:
+    if "stock_quantity" in payload.model_fields_set:
         drink.stock_quantity = payload.stock_quantity
     if payload.low_stock_threshold is not None:
         drink.low_stock_threshold = payload.low_stock_threshold
-    if payload.team_id is not None:
-        ensure_team_exists(db, payload.team_id)
-        drink.team_id = payload.team_id
-    if payload.fridge_id is not None:
-        ensure_fridge_exists(db, payload.fridge_id)
-        drink.fridge_id = payload.fridge_id
     if payload.is_active is not None:
         drink.is_active = payload.is_active
     db.commit()
