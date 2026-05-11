@@ -45,6 +45,11 @@ def notify_low_stock(db: Session, drink: Drink, stock_before: int | None) -> Non
             record_email_log(db, recipient, subject, month, "FAILED", str(exc))
 
 
+@router.get("/me")
+def get_me(current_user: User = Depends(get_current_user)) -> dict:
+    return {"id": current_user.id, "name": current_user.name, "email": current_user.email}
+
+
 @router.get("/drinks")
 def list_drinks(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> list[dict]:
     drinks = db.scalars(select(Drink).where(Drink.is_active.is_(True)).order_by(Drink.name.asc())).all()

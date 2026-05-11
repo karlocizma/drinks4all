@@ -4,19 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ALBdrinks - Dashboard</title>
+  <link rel="icon" href="/static/favicon.svg">
   <link rel="stylesheet" href="/static/css/app.css" />
 </head>
 <body>
-  <header class="topbar">
-    <h1>My Drinks</h1>
-    <div class="actions">
-      <input type="month" id="month-picker" />
-      <button id="refresh-summary">Refresh Summary</button>
-      <button id="open-password-modal">Change Password</button>
-      <button id="undo-last">Undo Last</button>
-      <button id="logout-btn">Logout</button>
+  <div class="topbar" style="justify-content:space-between;padding:0.6rem 1rem;">
+    <div style="display:flex;align-items:center;gap:0.6rem;">
+      <img src="/static/logo-wordmark.svg" alt="ALBdrinks" style="height:26px;">
+      <span id="topbar-username" style="font-size:0.85rem;color:var(--fg2);font-weight:600;"></span>
+      <span id="topbar-month" style="font-size:0.78rem;color:var(--fg-muted);"></span>
     </div>
-  </header>
+    <div style="display:flex;align-items:center;gap:0.4rem;">
+      <button id="undo-btn" class="btn btn-secondary" style="padding:0.35rem 0.65rem;font-size:0.82rem;">Undo</button>
+      <div style="position:relative;">
+        <button id="overflow-btn" class="btn btn-secondary" style="padding:0.35rem 0.65rem;font-size:0.82rem;">&#8943;</button>
+        <div id="overflow-menu" class="overflow-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);min-width:180px;background:var(--panel);border:1px solid var(--border-strong);border-radius:8px;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+          <div style="padding:0.5rem;">
+            <label style="font-size:0.72rem;color:var(--fg-muted);display:block;margin-bottom:0.2rem;">Month</label>
+            <input type="month" id="month-picker" style="width:100%;padding:0.4rem;background:var(--panel-alt);border:1px solid var(--border-input);border-radius:6px;color:var(--fg1);font-size:0.82rem;">
+          </div>
+          <button id="change-password-btn" style="display:block;width:100%;text-align:left;padding:0.5rem 0.75rem;background:none;border:none;color:var(--fg2);font-size:0.85rem;cursor:pointer;">Change Password</button>
+          <button id="logout-btn" style="display:block;width:100%;text-align:left;padding:0.5rem 0.75rem;background:none;border:none;color:var(--danger);font-size:0.85rem;cursor:pointer;">Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <main class="container">
     <section class="card">
@@ -27,7 +39,7 @@
     </section>
     <section>
       <h2>Available Drinks</h2>
-      <div id="drink-grid" class="drink-grid"></div>
+      <div class="drink-grid" id="drink-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));"></div>
     </section>
     <p id="error" class="error"></p>
   </main>
