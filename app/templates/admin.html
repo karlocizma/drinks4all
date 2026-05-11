@@ -4,24 +4,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ALBdrinks - Admin</title>
+  <link rel="icon" href="/static/favicon.svg">
   <link rel="stylesheet" href="/static/css/app.css" />
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <h1>Admin Console</h1>
+    <img src="/static/logo-wordmark.svg" alt="ALBdrinks" style="height:32px;">
     <div class="actions">
       <button id="logout-btn">Logout</button>
     </div>
   </header>
 
+  <!-- Reporting panel (full width, above two-col) -->
   <section class="container card report-panel">
-    <h2>📊 Reporting & Statistics</h2>
+    <h2>📊 Reporting &amp; Statistics</h2>
     <div class="report-controls">
       <input type="month" id="report-month" />
       <button id="load-report">🔎 Load Report</button>
       <button id="download-csv">⬇ CSV</button>
       <button id="download-pdf">⬇ PDF</button>
-      <button id="run-billing">📨 Run Billing & Close Month</button>
+      <button id="run-billing">📨 Run Billing &amp; Close Month</button>
       <button id="reset-month" class="btn-danger">Reset Month</button>
     </div>
     <p id="report-status" class="report-status"></p>
@@ -43,66 +46,215 @@
         <div id="stats-stock" class="stats-list"></div>
       </section>
     </div>
+    <section id="raw-report-panel" class="raw-report-panel hidden" hidden>
+      <h3>Raw Report JSON</h3>
+      <pre id="report-output"></pre>
+    </section>
   </section>
 
-  <main class="container three-col">
-    <section class="card">
-      <h2>👥 Teams & Fridges</h2>
-      <form id="team-form" class="grid compact-form">
-        <input placeholder="Team name" id="team-name" required />
-        <button type="submit">Create Team</button>
-      </form>
-      <form id="fridge-form" class="grid compact-form">
-        <input placeholder="Fridge name" id="fridge-name" required />
-        <input placeholder="Location" id="fridge-location" />
-        <select id="fridge-team"></select>
-        <button type="submit">Create Fridge</button>
-      </form>
-      <h3>Manage Teams</h3>
-      <div id="team-list"></div>
-      <h3>Manage Fridges</h3>
-      <div id="fridge-list"></div>
-    </section>
+  <!-- Two-column layout: Users | Drinks -->
+  <main class="container">
+    <div class="two-col" style="gap:2rem;align-items:flex-start;">
 
-    <section class="card">
-      <h2>🧑 Users</h2>
-      <form id="user-form" class="grid compact-form">
-        <input placeholder="Name" id="user-name" required />
-        <input placeholder="Email" id="user-email" required />
-        <input placeholder="Password" id="user-password" type="password" required />
-        <select id="user-role"><option>USER</option><option>ADMIN</option></select>
-        <select id="user-team"></select>
-        <button type="submit">Create User</button>
-      </form>
-      <h3>Manage Users</h3>
-      <div id="user-list"></div>
-      <h3>Pending Approvals</h3>
-      <div id="pending-user-list"></div>
-    </section>
+      <!-- Users column -->
+      <section>
+        <h2 style="margin-bottom:1rem;">
+          <i data-lucide="users" style="width:22px;height:22px;color:var(--accent);vertical-align:middle;"></i>
+          Users
+        </h2>
 
-    <section class="card">
-      <h2>🥤 Drinks</h2>
-      <form id="drink-form" class="grid compact-form">
-        <input placeholder="Name" id="drink-name" required />
-        <input placeholder="Photo URL" id="drink-photo" />
-        <input type="file" id="drink-image-file" accept="image/*" />
-        <button type="button" id="upload-image">Upload Image</button>
-        <input placeholder="Price (EUR)" id="drink-price" type="number" step="0.01" required />
-        <input placeholder="Stock quantity (optional)" id="drink-stock" type="number" />
-        <input placeholder="Low stock threshold" id="drink-threshold" type="number" value="5" />
-        <select id="drink-team"></select>
-        <select id="drink-fridge"></select>
-        <button type="submit">Create Drink</button>
-      </form>
-      <h3>Manage Drinks</h3>
-      <div id="drink-list"></div>
-      <section id="raw-report-panel" class="raw-report-panel hidden" hidden>
-        <h3>Raw Report JSON</h3>
-        <pre id="report-output"></pre>
+        <!-- Create user form -->
+        <div class="card" style="margin-bottom:1rem;">
+          <h3 style="margin-bottom:0.75rem;">Add User</h3>
+          <form id="user-form" class="compact-form">
+            <div class="field">
+              <label>Name</label>
+              <input placeholder="Name" id="user-name" class="input-full" required />
+            </div>
+            <div class="field">
+              <label>Email</label>
+              <input placeholder="Email" id="user-email" class="input-full" required />
+            </div>
+            <div class="field">
+              <label>Password</label>
+              <input placeholder="Password" id="user-password" type="password" class="input-full" required />
+            </div>
+            <div class="row-2">
+              <div class="field">
+                <label>Role</label>
+                <select id="user-role" class="input-full"><option value="USER">User</option><option value="ADMIN">Admin</option></select>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">
+              <i data-lucide="user-plus" style="width:18px;height:18px;vertical-align:middle;"></i>
+              Create User
+            </button>
+          </form>
+        </div>
+
+        <div id="user-list"></div>
+
+        <h3 style="margin:1rem 0 0.5rem;">Pending Approvals</h3>
+        <div id="pending-user-list"></div>
       </section>
-    </section>
+
+      <!-- Drinks column -->
+      <section>
+        <h2 style="margin-bottom:1rem;">
+          <i data-lucide="coffee" style="width:22px;height:22px;color:var(--accent);vertical-align:middle;"></i>
+          Drinks
+        </h2>
+
+        <!-- Create drink form -->
+        <div class="card" style="margin-bottom:1rem;">
+          <h3 style="margin-bottom:0.75rem;">Add Drink</h3>
+          <form id="drink-create-form">
+            <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
+              <button type="button" id="upload-btn-create" class="btn btn-secondary btn-icon">
+                <i data-lucide="image-plus" style="width:18px;height:18px;"></i> Upload Photo
+              </button>
+              <input type="file" id="upload-input-create" accept="image/*" style="display:none;">
+              <span style="font-size:0.8rem;color:var(--fg-muted);">or paste URL below</span>
+            </div>
+            <div class="field">
+              <label>Photo URL</label>
+              <input type="text" id="create-photo-url" class="input-full" placeholder="/static/uploads/...">
+            </div>
+            <div class="field">
+              <label>Name</label>
+              <input type="text" id="create-name" class="input-full" placeholder="Club Mate" required>
+            </div>
+            <div class="row-2">
+              <div class="field">
+                <label>Price (EUR)</label>
+                <input type="number" id="create-price" step="0.01" min="0" placeholder="1.50" required>
+              </div>
+              <div class="field">
+                <label>Stock (blank = unlimited)</label>
+                <input type="number" id="create-stock" min="0" placeholder="∞">
+              </div>
+            </div>
+            <div class="field">
+              <label>Low-stock alert at</label>
+              <input type="number" id="create-threshold" value="5" min="0">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">
+              <i data-lucide="plus" style="width:18px;height:18px;vertical-align:middle;"></i>
+              Create Drink
+            </button>
+          </form>
+        </div>
+
+        <!-- Drink list (populated by JS) -->
+        <div id="drink-list"></div>
+      </section>
+
+    </div>
   </main>
+
   <p id="error" class="error container"></p>
+
+  <!-- Drink edit modal -->
+  <div id="drink-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-panel">
+      <div class="modal-hd">
+        <h3>Edit Drink</h3>
+        <button id="drink-modal-close" class="btn btn-secondary" style="padding:0.3rem 0.7rem;">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-drink-id">
+        <div style="display:flex;gap:0.75rem;align-items:flex-start;margin-bottom:0.85rem;">
+          <img id="edit-thumb" src="" alt="" class="modal-thumb" style="border:2px solid var(--border-strong);">
+          <div style="flex:1;display:flex;flex-direction:column;gap:0.45rem;">
+            <div class="field">
+              <label>Name</label>
+              <input type="text" id="edit-name" class="input-full">
+            </div>
+            <button type="button" id="upload-btn-edit" class="btn btn-secondary btn-icon" style="width:100%;">
+              <i data-lucide="image-plus" style="width:18px;height:18px;"></i> Change Photo
+            </button>
+            <input type="file" id="upload-input-edit" accept="image/*" style="display:none;">
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0.6rem;">
+          <label>Photo URL</label>
+          <input type="text" id="edit-photo-url" class="input-full">
+        </div>
+        <div class="row-2" style="margin-bottom:0.6rem;">
+          <div class="field">
+            <label>Price (EUR)</label>
+            <input type="number" id="edit-price" step="0.01" min="0">
+          </div>
+          <div class="field">
+            <label>Stock (blank = unlimited)</label>
+            <input type="number" id="edit-stock" min="0">
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0.7rem;">
+          <label>Low-stock alert at</label>
+          <input type="number" id="edit-threshold" min="0">
+        </div>
+        <div class="field">
+          <label>Active</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="edit-active">
+            <span class="slider"></span>
+          </label>
+          <span id="edit-active-label" style="margin-left:0.5rem;font-size:0.85rem;color:var(--fg2);">Active — visible to users</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="drink-save-btn" class="btn btn-primary" style="flex:1;">Save</button>
+        <button id="drink-cancel-btn" class="btn btn-secondary">Cancel</button>
+        <button id="drink-delete-btn" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- User edit modal -->
+  <div id="user-modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-panel">
+      <div class="modal-hd">
+        <h3>Edit User</h3>
+        <button id="user-modal-close" class="btn btn-secondary" style="padding:0.3rem 0.7rem;">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-user-id">
+        <div class="field">
+          <label>Name</label>
+          <input type="text" id="edit-user-name" class="input-full">
+        </div>
+        <div class="field">
+          <label>Role</label>
+          <select id="edit-user-role" class="input-full">
+            <option value="USER">User</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Active</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="edit-user-active">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="user-save-btn" class="btn btn-primary" style="flex:1;">Save</button>
+        <button id="user-cancel-btn" class="btn btn-secondary">Cancel</button>
+        <button id="user-reset-pw-btn" class="btn btn-secondary">Reset Password</button>
+        <button id="user-delete-btn" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/static/js/admin.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
 </body>
 </html>

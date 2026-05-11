@@ -3,8 +3,6 @@ const reportOut = document.getElementById('report-output');
 const monthInput = document.getElementById('report-month');
 const userList = document.getElementById('user-list');
 const pendingUserList = document.getElementById('pending-user-list');
-const teamList = document.getElementById('team-list');
-const fridgeList = document.getElementById('fridge-list');
 const drinkList = document.getElementById('drink-list');
 const statsCards = document.getElementById('stats-cards');
 const statsUsers = document.getElementById('stats-users');
@@ -14,8 +12,6 @@ const rawReportPanel = document.getElementById('raw-report-panel');
 const toggleRawReportBtn = document.getElementById('toggle-raw-report');
 const reportStatusEl = document.getElementById('report-status');
 
-let teams = [];
-let fridges = [];
 let users = [];
 let pendingUsers = [];
 let drinks = [];
@@ -39,90 +35,60 @@ async function api(url, options = {}) {
   return res;
 }
 
-function fillSelect(id, items, labelFn, includeEmpty = true) {
-  const el = document.getElementById(id);
-  const options = [];
-  if (includeEmpty) {
-    options.push('<option value="">None</option>');
-  }
-  options.push(...items.map((item) => `<option value="${item.id}">${labelFn(item)}</option>`));
-  el.innerHTML = options.join('');
-}
-
-function renderTeams() {
-  teamList.innerHTML = teams.map((t) => `
-    <div class="line-item">
-      <span>#${t.id} ${t.name}</span>
-      <div class="inline-actions">
-        <button data-act="team-edit" data-id="${t.id}">Edit</button>
-        <button data-act="team-del" data-id="${t.id}">Delete</button>
-      </div>
-    </div>
-  `).join('') || 'No teams';
-}
-
-function renderFridges() {
-  fridgeList.innerHTML = fridges.map((f) => `
-    <div class="line-item">
-      <span>#${f.id} ${f.name} (${f.location || 'no location'}) team:${f.team_id || '-'}</span>
-      <div class="inline-actions">
-        <button data-act="fridge-edit" data-id="${f.id}">Edit</button>
-        <button data-act="fridge-del" data-id="${f.id}">Delete</button>
-      </div>
-    </div>
-  `).join('') || 'No fridges';
-}
-
 function renderUsers() {
   userList.innerHTML = users.map((u) => `
-    <div class="line-item">
-      <span>#${u.id} ${u.name} (${u.email}) ${u.role} team:${u.team_id || '-'} ${u.is_active ? 'active' : 'inactive'}</span>
-      <div class="inline-actions">
-        <button data-act="user-edit" data-id="${u.id}">Edit</button>
-        <button data-act="user-pass" data-id="${u.id}">Reset Password</button>
-        <button data-act="user-del" data-id="${u.id}">Delete</button>
+    <div class="drink-admin-row">
+      <div style="flex:1;min-width:0;">
+        <strong>${u.name}</strong>
+        <span style="font-size:0.8rem;color:var(--fg-muted);margin-left:0.4rem;">${u.email}</span>
+        <span class="stock-pill ${u.is_active ? 'ok' : 'low'}" style="margin-left:0.4rem;">${u.role}</span>
+        ${!u.is_active ? '<span class="stock-pill low" style="margin-left:0.25rem;">inactive</span>' : ''}
+      </div>
+      <div style="display:flex;gap:0.4rem;">
+        <button class="btn btn-secondary btn-icon" data-act="user-edit" data-id="${u.id}">
+          <i data-lucide="pencil" style="width:15px;height:15px;pointer-events:none;"></i>
+        </button>
+        <button class="btn btn-danger btn-icon" data-act="user-del" data-id="${u.id}">
+          <i data-lucide="trash-2" style="width:15px;height:15px;pointer-events:none;"></i>
+        </button>
       </div>
     </div>
-  `).join('') || 'No users';
+  `).join('') || '<p style="color:var(--fg-muted);">No users</p>';
+  lucide.createIcons();
 }
 
 function renderPendingUsers() {
   pendingUserList.innerHTML = pendingUsers.map((u) => `
-    <div class="line-item">
-      <span>#${u.id} ${u.name} (${u.email}) pending</span>
-      <div class="inline-actions">
-        <button data-act="pending-approve" data-id="${u.id}">Approve</button>
-        <button data-act="pending-reject" data-id="${u.id}">Reject</button>
+    <div class="drink-admin-row">
+      <span style="flex:1;">#${u.id} ${u.name} (${u.email})</span>
+      <div style="display:flex;gap:0.4rem;">
+        <button class="btn btn-primary btn-icon" data-act="pending-approve" data-id="${u.id}">Approve</button>
+        <button class="btn btn-danger btn-icon" data-act="pending-reject" data-id="${u.id}">Reject</button>
       </div>
     </div>
-  `).join('') || 'No pending users';
+  `).join('') || '<p style="color:var(--fg-muted);">No pending approvals</p>';
 }
 
 function renderDrinks() {
-  drinkList.innerHTML = drinks.map((d) => `
-    <div class="line-item">
-      <span>#${d.id} ${d.name} ${eur(d.unit_price)} stock:${d.stock_quantity ?? 'unlimited'} team:${d.team_id || '-'} fridge:${d.fridge_id || '-'}</span>
-      <div class="inline-actions">
-        <button data-act="drink-edit" data-id="${d.id}">Edit</button>
-        <button data-act="drink-del" data-id="${d.id}">Delete</button>
+  drinkList.innerHTML = drinks.map((d) => {
+    const stockClass = d.stock_quantity == null ? 'inf' : (d.stock_quantity <= d.low_stock_threshold ? 'low' : 'ok');
+    const stockLabel = d.stock_quantity == null ? '∞' : d.stock_quantity;
+    return `
+      <div class="drink-admin-row">
+        ${d.photo_url ? `<img src="${d.photo_url}" alt="${d.name}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;">` : '<div style="width:40px;height:40px;background:var(--bg2);border-radius:6px;flex-shrink:0;"></div>'}
+        <div style="flex:1;min-width:0;">
+          <strong>${d.name}</strong>
+          <span style="font-size:0.8rem;color:var(--fg-muted);margin-left:0.4rem;">${eur(d.unit_price)}</span>
+          <span class="stock-pill ${stockClass}" style="margin-left:0.4rem;">stock: ${stockLabel}</span>
+          ${!d.is_active ? '<span class="stock-pill low" style="margin-left:0.25rem;">inactive</span>' : ''}
+        </div>
+        <button class="btn btn-secondary btn-icon" data-act="drink-edit" data-id="${d.id}">
+          <i data-lucide="pencil" style="width:15px;height:15px;pointer-events:none;"></i>
+        </button>
       </div>
-    </div>
-  `).join('') || 'No drinks';
-}
-
-async function loadTeamsAndFridges() {
-  const tRes = await api('/admin/teams');
-  const fRes = await api('/admin/fridges');
-  teams = await tRes.json();
-  fridges = await fRes.json();
-
-  renderTeams();
-  renderFridges();
-
-  fillSelect('user-team', teams, (t) => t.name);
-  fillSelect('drink-team', teams, (t) => t.name);
-  fillSelect('fridge-team', teams, (t) => t.name);
-  fillSelect('drink-fridge', fridges, (f) => f.name);
+    `;
+  }).join('') || '<p style="color:var(--fg-muted);">No drinks</p>';
+  lucide.createIcons();
 }
 
 async function loadUsers() {
@@ -233,43 +199,7 @@ function setRawReportVisibility(visible) {
   toggleRawReportBtn.textContent = visible ? 'Hide Raw Report JSON' : 'Show Raw Report JSON';
 }
 
-document.getElementById('team-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  errorEl.textContent = '';
-  try {
-    await api('/admin/teams', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: document.getElementById('team-name').value }),
-    });
-    document.getElementById('team-name').value = '';
-    await loadTeamsAndFridges();
-  } catch (err) {
-    errorEl.textContent = err.message;
-  }
-});
-
-document.getElementById('fridge-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  errorEl.textContent = '';
-  try {
-    await api('/admin/fridges', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: document.getElementById('fridge-name').value,
-        location: document.getElementById('fridge-location').value || null,
-        team_id: document.getElementById('fridge-team').value ? Number(document.getElementById('fridge-team').value) : null,
-      }),
-    });
-    document.getElementById('fridge-name').value = '';
-    document.getElementById('fridge-location').value = '';
-    await loadTeamsAndFridges();
-  } catch (err) {
-    errorEl.textContent = err.message;
-  }
-});
-
+// Create user form
 document.getElementById('user-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   errorEl.textContent = '';
@@ -282,37 +212,18 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
         email: document.getElementById('user-email').value,
         password: document.getElementById('user-password').value,
         role: document.getElementById('user-role').value,
-        team_id: document.getElementById('user-team').value ? Number(document.getElementById('user-team').value) : null,
+        team_id: null,
       }),
     });
+    e.target.reset();
     await loadUsers();
   } catch (err) {
     errorEl.textContent = err.message;
   }
 });
 
-document.getElementById('upload-image').addEventListener('click', async () => {
-  const input = document.getElementById('drink-image-file');
-  const file = input.files?.[0];
-  if (!file) {
-    errorEl.textContent = 'Please choose an image file first.';
-    return;
-  }
-
-  const fd = new FormData();
-  fd.append('file', file);
-
-  try {
-    const res = await api('/admin/drinks/upload-image', { method: 'POST', body: fd });
-    const payload = await res.json();
-    document.getElementById('drink-photo').value = payload.photo_url;
-    errorEl.textContent = 'Image uploaded.';
-  } catch (err) {
-    errorEl.textContent = err.message;
-  }
-});
-
-document.getElementById('drink-form').addEventListener('submit', async (e) => {
+// Create drink form
+document.getElementById('drink-create-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   errorEl.textContent = '';
   try {
@@ -320,116 +231,62 @@ document.getElementById('drink-form').addEventListener('submit', async (e) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: document.getElementById('drink-name').value,
-        photo_url: document.getElementById('drink-photo').value,
-        unit_price: Number(document.getElementById('drink-price').value),
-        stock_quantity: document.getElementById('drink-stock').value ? Number(document.getElementById('drink-stock').value) : null,
-        low_stock_threshold: Number(document.getElementById('drink-threshold').value || 5),
-        team_id: document.getElementById('drink-team').value ? Number(document.getElementById('drink-team').value) : null,
-        fridge_id: document.getElementById('drink-fridge').value ? Number(document.getElementById('drink-fridge').value) : null,
+        name: document.getElementById('create-name').value,
+        photo_url: document.getElementById('create-photo-url').value || null,
+        unit_price: Number(document.getElementById('create-price').value),
+        stock_quantity: document.getElementById('create-stock').value ? Number(document.getElementById('create-stock').value) : null,
+        low_stock_threshold: Number(document.getElementById('create-threshold').value || 5),
+        team_id: null,
+        fridge_id: null,
         is_active: true,
       }),
     });
-    errorEl.textContent = 'Drink created.';
+    e.target.reset();
     await loadDrinks();
   } catch (err) {
     errorEl.textContent = err.message;
   }
 });
 
-teamList.addEventListener('click', async (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  const id = Number(btn.dataset.id);
-  const item = teams.find((t) => t.id === id);
-  if (!item) return;
+// Photo upload for create form
+document.getElementById('upload-btn-create').addEventListener('click', () => {
+  document.getElementById('upload-input-create').click();
+});
+
+document.getElementById('upload-input-create').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
   try {
-    if (btn.dataset.act === 'team-edit') {
-      const name = prompt('New team name', item.name);
-      if (!name) return;
-      await api(`/admin/teams/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
-    }
-    if (btn.dataset.act === 'team-del') {
-      if (!confirm(`Delete team ${item.name}?`)) return;
-      await api(`/admin/teams/${id}`, { method: 'DELETE' });
-    }
-    await loadTeamsAndFridges();
-    await loadUsers();
-    await loadDrinks();
+    const res = await api('/admin/drinks/upload-image', { method: 'POST', body: fd });
+    const payload = await res.json();
+    document.getElementById('create-photo-url').value = payload.photo_url;
   } catch (err) {
     errorEl.textContent = err.message;
   }
 });
 
-fridgeList.addEventListener('click', async (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  const id = Number(btn.dataset.id);
-  const item = fridges.find((f) => f.id === id);
-  if (!item) return;
-  try {
-    if (btn.dataset.act === 'fridge-edit') {
-      const name = prompt('Fridge name', item.name);
-      if (!name) return;
-      const location = prompt('Location', item.location || '') ?? '';
-      const teamIdRaw = prompt('Team id (empty for none)', item.team_id || '');
-      const team_id = teamIdRaw ? Number(teamIdRaw) : null;
-      await api(`/admin/fridges/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, location, team_id }),
-      });
-    }
-    if (btn.dataset.act === 'fridge-del') {
-      if (!confirm(`Delete fridge ${item.name}?`)) return;
-      await api(`/admin/fridges/${id}`, { method: 'DELETE' });
-    }
-    await loadTeamsAndFridges();
-    await loadDrinks();
-  } catch (err) {
-    errorEl.textContent = err.message;
-  }
-});
-
-userList.addEventListener('click', async (e) => {
+// User list actions
+userList.addEventListener('click', (e) => {
   const btn = e.target.closest('button');
   if (!btn) return;
   const id = Number(btn.dataset.id);
   const item = users.find((u) => u.id === id);
   if (!item) return;
+  if (btn.dataset.act === 'user-edit') openUserModal(item);
+  if (btn.dataset.act === 'user-del') confirmDeleteUser(id, item);
+});
+
+async function confirmDeleteUser(id, item) {
+  if (!confirm(`Delete user ${item.email}?`)) return;
   try {
-    if (btn.dataset.act === 'user-edit') {
-      const name = prompt('Name', item.name);
-      if (!name) return;
-      const role = prompt('Role (USER or ADMIN)', item.role);
-      if (!role) return;
-      const teamIdRaw = prompt('Team id (empty for none)', item.team_id || '');
-      const team_id = teamIdRaw ? Number(teamIdRaw) : null;
-      const is_active = confirm('User active? Click OK=yes, Cancel=no');
-      await api(`/admin/users/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, role, team_id, is_active }),
-      });
-    }
-    if (btn.dataset.act === 'user-pass') {
-      const password = prompt('New password (min 6 chars)');
-      if (!password) return;
-      await api(`/admin/users/${id}/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-    }
-    if (btn.dataset.act === 'user-del') {
-      if (!confirm(`Delete user ${item.email}?`)) return;
-      await api(`/admin/users/${id}`, { method: 'DELETE' });
-    }
+    await api(`/admin/users/${id}`, { method: 'DELETE' });
     await loadUsers();
   } catch (err) {
     errorEl.textContent = err.message;
   }
-});
+}
 
 pendingUserList.addEventListener('click', async (e) => {
   const btn = e.target.closest('button');
@@ -451,48 +308,202 @@ pendingUserList.addEventListener('click', async (e) => {
   }
 });
 
-drinkList.addEventListener('click', async (e) => {
+// Drink list actions
+drinkList.addEventListener('click', (e) => {
   const btn = e.target.closest('button');
   if (!btn) return;
   const id = Number(btn.dataset.id);
   const item = drinks.find((d) => d.id === id);
   if (!item) return;
+  if (btn.dataset.act === 'drink-edit') openDrinkModal(item);
+});
+
+// Drink edit modal
+const drinkModal = document.getElementById('drink-modal');
+
+function openDrinkModal(drink) {
+  document.getElementById('edit-drink-id').value = drink.id;
+  document.getElementById('edit-name').value = drink.name;
+  document.getElementById('edit-photo-url').value = drink.photo_url || '';
+  document.getElementById('edit-price').value = drink.unit_price;
+  document.getElementById('edit-stock').value = drink.stock_quantity ?? '';
+  document.getElementById('edit-threshold').value = drink.low_stock_threshold ?? 5;
+  document.getElementById('edit-active').checked = drink.is_active;
+  const thumb = document.getElementById('edit-thumb');
+  thumb.src = drink.photo_url || '';
+  thumb.style.display = drink.photo_url ? '' : 'none';
+  updateDrinkActiveLabel(drink.is_active);
+  drinkModal.style.display = '';
+  lucide.createIcons();
+}
+
+function closeDrinkModal() {
+  drinkModal.style.display = 'none';
+}
+
+function updateDrinkActiveLabel(active) {
+  document.getElementById('edit-active-label').textContent = active
+    ? 'Active — visible to users'
+    : 'Inactive — hidden from users';
+}
+
+document.getElementById('edit-active').addEventListener('change', (e) => {
+  updateDrinkActiveLabel(e.target.checked);
+});
+
+document.getElementById('drink-modal-close').addEventListener('click', closeDrinkModal);
+document.getElementById('drink-cancel-btn').addEventListener('click', closeDrinkModal);
+
+drinkModal.addEventListener('click', (e) => {
+  if (e.target === drinkModal) closeDrinkModal();
+});
+
+document.getElementById('drink-save-btn').addEventListener('click', async () => {
+  const id = Number(document.getElementById('edit-drink-id').value);
+  errorEl.textContent = '';
   try {
-    if (btn.dataset.act === 'drink-edit') {
-      const name = prompt('Drink name', item.name);
-      if (!name) return;
-      const unit_price = Number(prompt('Price in EUR', item.unit_price));
-      if (Number.isNaN(unit_price)) return;
-      const stockRaw = prompt('Stock quantity (empty for unlimited)', item.stock_quantity ?? '');
-      const stock_quantity = stockRaw === '' ? null : Number(stockRaw);
-      const low_stock_threshold = Number(prompt('Low stock threshold', item.low_stock_threshold));
-      const teamRaw = prompt('Team id (empty for none)', item.team_id || '');
-      const fridgeRaw = prompt('Fridge id (empty for none)', item.fridge_id || '');
-      await api(`/admin/drinks/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          photo_url: item.photo_url,
-          unit_price,
-          stock_quantity,
-          low_stock_threshold,
-          team_id: teamRaw ? Number(teamRaw) : null,
-          fridge_id: fridgeRaw ? Number(fridgeRaw) : null,
-          is_active: item.is_active,
-        }),
-      });
-    }
-    if (btn.dataset.act === 'drink-del') {
-      if (!confirm(`Delete drink ${item.name}?`)) return;
-      await api(`/admin/drinks/${id}`, { method: 'DELETE' });
-    }
+    await api(`/admin/drinks/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: document.getElementById('edit-name').value,
+        photo_url: document.getElementById('edit-photo-url').value || null,
+        unit_price: Number(document.getElementById('edit-price').value),
+        stock_quantity: document.getElementById('edit-stock').value !== '' ? Number(document.getElementById('edit-stock').value) : null,
+        low_stock_threshold: Number(document.getElementById('edit-threshold').value || 5),
+        is_active: document.getElementById('edit-active').checked,
+        team_id: null,
+        fridge_id: null,
+      }),
+    });
+    closeDrinkModal();
     await loadDrinks();
   } catch (err) {
     errorEl.textContent = err.message;
   }
 });
 
+document.getElementById('drink-delete-btn').addEventListener('click', async () => {
+  const id = Number(document.getElementById('edit-drink-id').value);
+  const drink = drinks.find((d) => d.id === id);
+  if (!confirm(`Delete drink ${drink ? drink.name : id}?`)) return;
+  try {
+    await api(`/admin/drinks/${id}`, { method: 'DELETE' });
+    closeDrinkModal();
+    await loadDrinks();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+});
+
+// Photo upload for edit modal
+document.getElementById('upload-btn-edit').addEventListener('click', () => {
+  document.getElementById('upload-input-edit').click();
+});
+
+document.getElementById('upload-input-edit').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await api('/admin/drinks/upload-image', { method: 'POST', body: fd });
+    const payload = await res.json();
+    document.getElementById('edit-photo-url').value = payload.photo_url;
+    const thumb = document.getElementById('edit-thumb');
+    thumb.src = payload.photo_url;
+    thumb.style.display = '';
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+});
+
+// Sync thumb when URL field changes
+document.getElementById('edit-photo-url').addEventListener('input', (e) => {
+  const thumb = document.getElementById('edit-thumb');
+  if (e.target.value) {
+    thumb.src = e.target.value;
+    thumb.style.display = '';
+  } else {
+    thumb.style.display = 'none';
+  }
+});
+
+// User edit modal
+const userModal = document.getElementById('user-modal');
+
+function openUserModal(user) {
+  document.getElementById('edit-user-id').value = user.id;
+  document.getElementById('edit-user-name').value = user.name;
+  document.getElementById('edit-user-role').value = user.role;
+  document.getElementById('edit-user-active').checked = user.is_active;
+  userModal.style.display = '';
+  lucide.createIcons();
+}
+
+function closeUserModal() {
+  userModal.style.display = 'none';
+}
+
+document.getElementById('user-modal-close').addEventListener('click', closeUserModal);
+document.getElementById('user-cancel-btn').addEventListener('click', closeUserModal);
+
+userModal.addEventListener('click', (e) => {
+  if (e.target === userModal) closeUserModal();
+});
+
+document.getElementById('user-save-btn').addEventListener('click', async () => {
+  const id = Number(document.getElementById('edit-user-id').value);
+  errorEl.textContent = '';
+  try {
+    await api(`/admin/users/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: document.getElementById('edit-user-name').value,
+        role: document.getElementById('edit-user-role').value,
+        is_active: document.getElementById('edit-user-active').checked,
+        team_id: null,
+      }),
+    });
+    closeUserModal();
+    await loadUsers();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+});
+
+document.getElementById('user-reset-pw-btn').addEventListener('click', async () => {
+  const id = Number(document.getElementById('edit-user-id').value);
+  const password = prompt('New password (min 6 chars)');
+  if (!password) return;
+  try {
+    await api(`/admin/users/${id}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    closeUserModal();
+    errorEl.textContent = 'Password reset successfully.';
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+});
+
+document.getElementById('user-delete-btn').addEventListener('click', async () => {
+  const id = Number(document.getElementById('edit-user-id').value);
+  const user = users.find((u) => u.id === id);
+  if (!confirm(`Delete user ${user ? user.email : id}?`)) return;
+  try {
+    await api(`/admin/users/${id}`, { method: 'DELETE' });
+    closeUserModal();
+    await loadUsers();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+});
+
+// Reporting controls
 document.getElementById('load-report').addEventListener('click', async () => {
   try {
     await loadReport();
@@ -555,8 +566,9 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
   window.location.href = '/';
 });
 
+// Init
 monthInput.value = currentMonth();
 setRawReportVisibility(false);
-Promise.all([loadTeamsAndFridges(), loadUsers(), loadDrinks(), loadReport()]).catch(() => {
+Promise.all([loadUsers(), loadDrinks(), loadReport()]).catch(() => {
   window.location.href = '/';
 });
