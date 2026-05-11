@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 140" width="520" height="140">
+  <title>ALBdrinks wordmark</title>
+  <rect width="520" height="140" fill="#0f172a"></rect>
+  
+  <g transform="translate(28, 28)">
+    <rect x="0" y="0" width="84" height="84" rx="18" fill="#22d3ee"></rect>
+    
+    <g transform="translate(28, 14)" fill="#082f49">
+      <rect x="10" y="0" width="8" height="10" rx="1"></rect>
+      <rect x="6" y="10" width="16" height="6"></rect>
+      <path d="M 4 16 Q 4 22 4 28 L 4 52 Q 4 56 8 56 L 20 56 Q 24 56 24 52 L 24 28 Q 24 22 24 16 Z"></path>
+      <rect x="6" y="34" width="16" height="2" fill="#22d3ee" opacity="0.5"></rect>
+    </g>
+  </g>
+  
+  <text x="132" y="89" font-family="Inter, &#39;Segoe UI&#39;, system-ui, sans-serif" font-weight="700" font-size="48" fill="#f8fafc" letter-spacing="-1.2">ALB<tspan fill="#22d3ee">drinks</tspan></text>
+</svg>
