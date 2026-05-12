@@ -10,8 +10,11 @@ const confirmDrinkBtn = document.getElementById('confirm-drink-btn');
 const cancelDrinkBtn = document.getElementById('cancel-drink-btn');
 const passwordModal = document.getElementById('password-modal');
 const cancelPasswordBtn = document.getElementById('cancel-password-btn');
+const viewGridBtn = document.getElementById('view-grid-btn');
+const viewListBtn = document.getElementById('view-list-btn');
 
 let pendingDrink = null;
+let viewMode = localStorage.getItem('drinks-view') || 'grid';
 
 function currentMonth() {
   const now = new Date();
@@ -28,6 +31,30 @@ function formatMonthLabel(monthStr) {
   const date = new Date(Number(year), Number(month) - 1, 1);
   return date.toLocaleString('default', { month: 'long', year: 'numeric' });
 }
+
+function applyViewMode() {
+  if (viewMode === 'list') {
+    grid.classList.add('list-mode');
+    viewGridBtn.classList.remove('active');
+    viewListBtn.classList.add('active');
+  } else {
+    grid.classList.remove('list-mode');
+    viewGridBtn.classList.add('active');
+    viewListBtn.classList.remove('active');
+  }
+}
+
+viewGridBtn.addEventListener('click', () => {
+  viewMode = 'grid';
+  localStorage.setItem('drinks-view', viewMode);
+  applyViewMode();
+});
+
+viewListBtn.addEventListener('click', () => {
+  viewMode = 'list';
+  localStorage.setItem('drinks-view', viewMode);
+  applyViewMode();
+});
 
 async function loadUser() {
   try {
@@ -123,12 +150,17 @@ async function loadDrinks() {
     const card = document.createElement('div');
     card.className = 'drink';
     card.dataset.id = d.id;
-    card.dataset.name = d.name;
-    card.dataset.price = d.unit_price;
     const stockWarn = (d.stock_quantity !== null && d.stock_quantity !== undefined && d.stock_quantity <= d.low_stock_threshold)
-      ? `<div style="font-size:0.75rem;color:#f59e0b;margin-top:0.35rem;text-align:center;">⚠ ${d.stock_quantity} left</div>`
+      ? `<div class="drink-warn">&#9888; ${d.stock_quantity} left</div>`
       : '';
-    card.innerHTML = `<div style="height:140px;overflow:hidden;"><img src="${d.photo_url || ''}" alt="${d.name}" style="width:100%;height:100%;object-fit:cover;"></div><div class="drink-body" style="padding:0.65rem;"><div style="font-weight:600;font-size:0.9rem;margin-bottom:0.25rem;">${d.name}</div><div style="color:var(--accent);font-size:0.85rem;margin-bottom:0.5rem;">${eur(d.unit_price)}</div><button class="btn btn-primary add-drink-btn" data-id="${d.id}" style="width:100%;min-height:44px;">+1 Drink</button>${stockWarn}</div>`;
+    card.innerHTML = `
+      <div class="drink-photo"><img src="${d.photo_url || ''}" alt="${d.name}"></div>
+      <div class="drink-body">
+        <div class="drink-title">${d.name}</div>
+        <div class="drink-price">${eur(d.unit_price)}</div>
+        <button class="btn btn-primary add-drink-btn" data-id="${d.id}">+1 Drink</button>
+        ${stockWarn}
+      </div>`;
     card.querySelector('.add-drink-btn').addEventListener('click', () => openDrinkConfirm(d));
     grid.appendChild(card);
   });
@@ -225,6 +257,7 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 monthInput.addEventListener('change', loadSummary);
 monthInput.value = currentMonth();
 
+applyViewMode();
 loadUser();
 loadDrinks();
 loadSummary();

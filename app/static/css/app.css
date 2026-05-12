@@ -116,7 +116,7 @@ button {
 
 .drink-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 1rem;
 }
 
@@ -135,6 +135,119 @@ button {
 
 .drink .content {
   padding: 0.75rem;
+}
+
+/* Drink card inner elements */
+.drink-photo {
+  height: 140px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.drink-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.drink-body {
+  padding: 0.65rem;
+}
+
+.drink-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.drink-price {
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.add-drink-btn {
+  width: 100%;
+  min-height: 44px;
+}
+
+.drink-warn {
+  font-size: 0.75rem;
+  color: #f59e0b;
+  margin-top: 0.35rem;
+  text-align: center;
+}
+
+/* View toggle buttons */
+.view-toggle {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.view-toggle .btn {
+  padding: 0.3rem 0.55rem;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.view-toggle .btn.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+/* List mode overrides */
+.drink-grid.list-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.drink-grid.list-mode .drink {
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+}
+
+.drink-grid.list-mode .drink-photo {
+  width: 64px;
+  height: 64px;
+}
+
+.drink-grid.list-mode .drink-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  min-width: 0;
+}
+
+.drink-grid.list-mode .drink-title {
+  flex: 1;
+  margin-bottom: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drink-grid.list-mode .drink-price {
+  margin-bottom: 0;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.drink-grid.list-mode .add-drink-btn {
+  width: auto;
+  min-height: 40px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.drink-grid.list-mode .drink-warn {
+  display: none;
 }
 
 .two-col {

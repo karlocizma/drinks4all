@@ -38,8 +38,14 @@
       <div id="breakdown"></div>
     </section>
     <section>
-      <h2>Available Drinks</h2>
-      <div class="drink-grid" id="drink-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+        <h2 style="margin:0;">Available Drinks</h2>
+        <div class="view-toggle">
+          <button id="view-grid-btn" class="btn btn-secondary" title="Grid view">&#9638;</button>
+          <button id="view-list-btn" class="btn btn-secondary" title="List view">&#9776;</button>
+        </div>
+      </div>
+      <div class="drink-grid" id="drink-grid"></div>
     </section>
     <p id="error" class="error"></p>
   </main>
