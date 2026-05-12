@@ -1,170 +1,222 @@
 # ALBdrinks
 
-Drinks tracking web app with user login, admin management, inventory, monthly billing, SMTP reports, and mobile-compatible UI.
+Drinks tracking web app with user login, admin management, inventory, monthly billing, SMTP reports, and mobile-optimised UI.
 
 ## Highlights
-- Admin dashboard with teams/fridges/users/drinks management
-- Reporting panel with live statistics (revenue, active users, top drinks, low stock)
+
+- Admin console (desktop) — manage users, drinks, photo uploads, inventory and billing
+- Mobile dashboard — two-column drink grid, one-tap logging, undo, monthly summary
+- Reporting panel — live statistics (revenue, active users, top drinks, low stock)
 - Self-registration with admin approval workflow
-- Manual PayPal button for direct payment link
+- Manual PayPal button for direct payment link on the dashboard
 - Monthly email reporting (buyer overview + per-user payment statement)
-- Fully dockerized stack (`app + postgres + mailhog`)
 
-## Full Docker Stack
-This project is fully dockerized: **app + postgres + mailhog**.
+---
 
-### Start
+## Deployment Option 1 — Docker (recommended)
+
+The full stack (app + PostgreSQL + MailHog) runs with a single command.
+
+**Prerequisites:** Docker and Docker Compose installed.
+
 ```bash
 cp .env.example .env
+# Edit .env — at minimum set SECRET_KEY to a random string
 docker compose up --build -d
 ```
 
 Open:
 - App: http://localhost:8000
-- MailHog UI: http://localhost:8025
+- MailHog (local email UI): http://localhost:8025
 
-Default bootstrap admin:
+Default admin account:
 - Email: `admin@drinks.local`
 - Password: `admin123`
 
 ### Stop
+
 ```bash
 docker compose down
 ```
 
-### Reset database + uploaded images
+### Reset database and uploaded images
+
 ```bash
 docker compose down -v
 docker compose up --build -d
 ```
 
-## SMTP configuration
-Edit [`.env`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/.env):
-- `SMTP_HOST`
-- `SMTP_PORT`
-- `SMTP_SENDER`
-- `SMTP_USERNAME`
-- `SMTP_PASSWORD`
-- `SMTP_USE_TLS`
-- `BUYER_REPORT_EMAIL`
+---
 
-For local Docker testing, `SMTP_HOST=mailhog` and `SMTP_PORT=1025`.
-`BUYER_REPORT_EMAIL` can contain one or more recipients separated by commas.
+## Deployment Option 2 — Without Docker
 
-## PayPal button (manual payment link)
-Set in `.env`:
-- `PAYPAL_ME_URL=https://www.paypal.com/paypalme/YOURNAME`
+Use this when you want to run the app directly on a server with a native PostgreSQL installation.
 
-When set, users get a **Pay with PayPal** button on dashboard that opens PayPal with the current monthly EUR amount.
+**Prerequisites:** Python 3.12+, PostgreSQL 17, a virtual environment tool.
 
-## Key API
-- `POST /auth/login`
-- `POST /auth/register` (self-registration, admin approval required)
-- `POST /auth/logout`
-- `GET /drinks`
-- `POST /consumptions`
-- `DELETE /consumptions/last`
-- `POST /me/change-password`
-- `GET /me/summary?month=YYYY-MM`
-- `GET /admin/teams`, `POST /admin/teams`, `PUT /admin/teams/{team_id}`, `DELETE /admin/teams/{team_id}`
-- `GET /admin/fridges`, `POST /admin/fridges`, `PUT /admin/fridges/{fridge_id}`, `DELETE /admin/fridges/{fridge_id}`
-- `POST /admin/drinks/upload-image`
-- `GET /admin/drinks`, `POST /admin/drinks`, `PUT /admin/drinks/{drink_id}`, `DELETE /admin/drinks/{drink_id}`
-- `GET /admin/users`, `GET /admin/users/pending`, `POST /admin/users`, `PUT /admin/users/{user_id}`, `DELETE /admin/users/{user_id}`
-- `POST /admin/users/{user_id}/approve`
-- `POST /admin/users/{user_id}/reset-password`
-- `GET /admin/reports?month=YYYY-MM` (JSON/CSV/PDF)
-- `POST /admin/run-billing?month=YYYY-MM`
+### 1. Set up the database
 
-## Optional Local (non-docker app) run
+Create a PostgreSQL database and user, then set `DATABASE_URL` in `.env` to match:
+
+```
+DATABASE_URL=postgresql+psycopg://youruser:yourpassword@localhost:5432/drinks4all
+```
+
+### 2. Install dependencies
+
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-docker compose up -d postgres mailhog
+```
+
+### 3. Configure environment
+
+```bash
+cp .env.example .env
+# Edit .env — set DATABASE_URL, SECRET_KEY, SMTP_*, BUYER_REPORT_EMAIL
+```
+
+### 4. Bootstrap the database
+
+Creates all tables, applies schema migrations, and seeds the admin account and sample drinks:
+
+```bash
 python -m scripts.bootstrap
+```
+
+### 5. Run the app
+
+For development:
+```bash
 uvicorn app.main:app --reload
 ```
 
-## Automated Updates And Backups
-Local automation scripts are included in [`scripts/backup.sh`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/scripts/backup.sh), [`scripts/update.sh`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/scripts/update.sh), [`scripts/restore.sh`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/scripts/restore.sh), [`scripts/prune_backups.sh`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/scripts/prune_backups.sh), and [`scripts/check_env.sh`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/scripts/check_env.sh).
+For production (example with a single worker — increase as needed):
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+```
 
-Create a backup now:
+App is available at http://localhost:8000.
+
+> **Note:** MailHog is not required when using a real SMTP server. Set `SMTP_HOST`, `SMTP_PORT`, and `SMTP_USE_TLS=true` in `.env` to point at your mail provider.
+
+---
+
+## Environment Variables
+
+All settings are in `.env`. A template with every variable and its default is in `.env.example`.
+
+| Variable | Description |
+|---|---|
+| `SECRET_KEY` | JWT signing secret — set to a long random string in production |
+| `DATABASE_URL` | SQLAlchemy connection string |
+| `TIMEZONE` | Scheduler timezone (e.g. `Europe/Berlin`) |
+| `REMEMBER_ME_DAYS` | Session cookie lifetime when "Remember me" is checked |
+| `SMTP_HOST` | SMTP server hostname |
+| `SMTP_PORT` | SMTP port (1025 for MailHog, 465/587 for real providers) |
+| `SMTP_SENDER` | From address for all outgoing emails |
+| `SMTP_USERNAME` | SMTP auth username (leave blank for MailHog) |
+| `SMTP_PASSWORD` | SMTP auth password (leave blank for MailHog) |
+| `SMTP_USE_TLS` | `true` / `false` |
+| `BUYER_REPORT_EMAIL` | One or more comma-separated addresses for the monthly buyer report |
+| `PAYPAL_ME_URL` | Full PayPal.Me URL (e.g. `https://www.paypal.com/paypalme/YOURNAME`). Leave blank to hide the button. |
+| `UPLOAD_DIR` | Directory for uploaded drink images (default: `app/static/uploads`) |
+| `MAX_UPLOAD_MB` | Max image upload size in megabytes |
+
+---
+
+## PayPal Button
+
+When `PAYPAL_ME_URL` is set, users see a **Pay with PayPal** button on the dashboard that opens PayPal pre-filled with their current monthly total.
+
+---
+
+## Key API
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/auth/login` | Log in |
+| `POST` | `/auth/register` | Self-register (pending admin approval) |
+| `POST` | `/auth/logout` | Log out |
+| `GET` | `/me` | Current user info (id, name, email) |
+| `POST` | `/me/change-password` | Change own password |
+| `GET` | `/me/summary?month=YYYY-MM` | Monthly consumption summary |
+| `GET` | `/drinks` | List active drinks |
+| `POST` | `/consumptions` | Log a drink |
+| `DELETE` | `/consumptions/last` | Undo last drink |
+| `GET` | `/admin/drinks` | List all drinks (admin) |
+| `POST` | `/admin/drinks` | Create drink |
+| `PUT` | `/admin/drinks/{id}` | Update drink |
+| `DELETE` | `/admin/drinks/{id}` | Delete drink |
+| `POST` | `/admin/drinks/upload-image` | Upload drink photo |
+| `GET` | `/admin/users` | List users |
+| `GET` | `/admin/users/pending` | List pending-approval users |
+| `POST` | `/admin/users` | Create user |
+| `PUT` | `/admin/users/{id}` | Update user |
+| `DELETE` | `/admin/users/{id}` | Delete user |
+| `POST` | `/admin/users/{id}/approve` | Approve pending user |
+| `POST` | `/admin/users/{id}/reset-password` | Reset user password |
+| `GET` | `/admin/reports?month=YYYY-MM` | Monthly report (JSON / CSV / PDF) |
+| `POST` | `/admin/run-billing?month=YYYY-MM` | Trigger billing run |
+
+---
+
+## Maintenance Scripts
+
+All scripts are in `scripts/`. Run from the repository root.
+
+### Backup
+
 ```bash
 bash scripts/backup.sh
 ```
 
-Run a local update from your current checked-out code:
+Creates a timestamped backup in `backups/` containing:
+- PostgreSQL dump: `albdrinks-db-YYYYMMDD-HHMMSS.sql.gz`
+- Uploaded drink images: `albdrinks-uploads-YYYYMMDD-HHMMSS.tar.gz`
+- Environment file: `albdrinks-env-YYYYMMDD-HHMMSS.env`
+
+### Restore
+
 ```bash
-bash scripts/update.sh
+bash scripts/restore.sh latest     # restore newest backup
+bash scripts/restore.sh 20260101-120000  # restore specific timestamp
 ```
 
-Run an update that also pulls the latest git branch first:
+### Update
+
+Backs up, optionally pulls from git, rebuilds and restarts Docker, and checks the app responds:
+
 ```bash
-bash scripts/update.sh --with-pull --branch main --keep 10
+bash scripts/update.sh                            # rebuild from current code
+bash scripts/update.sh --with-pull --branch main --keep 10  # pull main first, keep 10 backups
 ```
 
-Restore the latest backup:
-```bash
-bash scripts/restore.sh latest
-```
+If the rebuild or health check fails, the script exits and prints the backup path so you can restore.
 
-Check whether your current `.env` is missing new variables from `.env.example`:
+### Check environment
+
+Compares `.env` against `.env.example` and reports any missing variables:
+
 ```bash
 bash scripts/check_env.sh
 ```
 
-Backups are written to `backups/` and include:
-- PostgreSQL dump: `albdrinks-db-YYYYMMDD-HHMMSS.sql.gz`
-- Uploaded drink images: `albdrinks-uploads-YYYYMMDD-HHMMSS.tar.gz`
-- Environment backup: `albdrinks-env-YYYYMMDD-HHMMSS.env`
+---
 
-The update script does this automatically:
-- creates a fresh backup
-- optionally pulls the selected git branch
-- compares `.env` with `.env.example` and stops if variables are missing
-- rebuilds and restarts Docker services
-- checks that the app responds on `http://localhost:8000/`
-- stops the app service if the rebuild or health check fails
-- prunes old backups
+## Running Tests
 
-## GitHub Actions Deploy
-Two workflows are included:
-- [`deploy.yml`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/.github/workflows/deploy.yml): deploy on push to `main` or manual dispatch
-- [`nightly-backup.yml`](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/.github/workflows/nightly-backup.yml): nightly remote backup over SSH
+No running database is required — tests use an in-memory SQLite database.
 
-Required GitHub repository secrets:
-- `DEPLOY_HOST`: server hostname or IP
-- `DEPLOY_USER`: SSH user
-- `DEPLOY_SSH_KEY`: private SSH key for that server
-- `DEPLOY_PATH`: absolute path to the repo on the server
-- `DEPLOY_PORT`: optional SSH port, usually `22`
-- `BACKUP_KEEP_COUNT`: optional number of backups to keep, for example `10`
-
-Server prerequisites:
-- the repository is already cloned on the server at `DEPLOY_PATH`
-- Docker and `docker compose` are installed
-- the server can run the same `docker compose up --build -d` flow manually
-- the `.env` file already exists on the server
-
-Recommended first-time server setup:
 ```bash
-git clone <your-repo-url> /path/to/albdrinks
-cd /path/to/albdrinks
-cp .env.example .env
-docker compose up --build -d
+pytest                                           # all tests
+pytest app/tests/test_auth_and_roles.py          # single file
+pytest -k "test_run_billing"                     # single test by name
 ```
 
-After that, pushing to `main` will trigger:
-- remote backup
-- git pull on the target branch
-- Docker rebuild and restart
-- HTTP health check
-
-If an update fails, the workflow exits with the latest backup path printed in the logs. You can then restore with:
-```bash
-bash scripts/restore.sh latest
-```
+---
 
 ## License
-This project is licensed under the MIT License. See [LICENSE](/mnt/c/Users/kcizmesija/Desktop/Programming/drinks4all/LICENSE).
+
+MIT License. See `LICENSE`.
