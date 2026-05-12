@@ -35,11 +35,41 @@ def notify_low_stock(db: Session, drink: Drink, stock_before: int | None) -> Non
         f"Threshold: {drink.low_stock_threshold}\n"
         f"Price: EUR {float(drink.unit_price):.2f}\n"
     )
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f1f5f9">
+<tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="100%" style="max-width:480px;" cellpadding="0" cellspacing="0">
+  <tr><td bgcolor="#0f172a" style="border-radius:12px 12px 0 0;padding:22px 28px;">
+    <div style="color:#22d3ee;font-size:20px;font-weight:700;letter-spacing:-0.5px;">ALBdrinks</div>
+    <div style="color:#94a3b8;font-size:13px;margin-top:4px;">Low Stock Alert</div>
+  </td></tr>
+  <tr><td bgcolor="#ffffff" style="padding:24px 28px;">
+    <p style="margin:0 0 4px;font-size:15px;font-weight:600;color:#0f172a;">{drink.name}</p>
+    <p style="margin:0 0 20px;font-size:14px;color:#64748b;">Stock has dropped to or below the reorder threshold.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:5px 0;color:#64748b;font-size:14px;padding-right:28px;">Current stock</td>
+          <td style="padding:5px 0;font-size:14px;font-weight:700;color:#c2410c;">{stock_after}</td></tr>
+      <tr><td style="padding:5px 0;color:#64748b;font-size:14px;padding-right:28px;">Threshold</td>
+          <td style="padding:5px 0;font-size:14px;color:#0f172a;">{drink.low_stock_threshold}</td></tr>
+      <tr><td style="padding:5px 0;color:#64748b;font-size:14px;padding-right:28px;">Price</td>
+          <td style="padding:5px 0;font-size:14px;color:#0f172a;">&#x20AC;{float(drink.unit_price):.2f}</td></tr>
+    </table>
+  </td></tr>
+  <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 12px 12px;padding:16px 28px;">
+    <p style="margin:0;font-size:12px;color:#94a3b8;">ALBdrinks &middot; Internal office drinks tracker</p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
     month = datetime.utcnow().strftime("%Y-%m")
 
     for recipient in recipients:
         try:
-            send_email(recipient, subject, body)
+            send_email(recipient, subject, body, html=html)
             record_email_log(db, recipient, subject, month, "SENT")
         except Exception as exc:  # pragma: no cover
             record_email_log(db, recipient, subject, month, "FAILED", str(exc))

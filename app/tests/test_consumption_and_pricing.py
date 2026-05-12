@@ -62,7 +62,7 @@ def test_low_stock_email_sent_once_when_threshold_is_crossed(client, normal_user
 
     sent = []
 
-    def fake_send_email(recipient: str, subject: str, body: str):
+    def fake_send_email(recipient: str, subject: str, body: str, html: str | None = None):
         sent.append((recipient, subject, body))
 
     monkeypatch.setattr("app.api.user.send_email", fake_send_email)

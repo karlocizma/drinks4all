@@ -56,7 +56,7 @@ def test_run_billing_records_email_logs(client, admin_user, normal_user, db, mon
 
     sent = []
 
-    def fake_send_email(recipient: str, subject: str, body: str):
+    def fake_send_email(recipient: str, subject: str, body: str, html: str | None = None):
         sent.append((recipient, subject, body))
 
     monkeypatch.setattr("app.services.billing_job.send_email", fake_send_email)
@@ -87,7 +87,7 @@ def test_manual_billing_closes_month_and_report_marks_it_closed(client, admin_us
     )
     db.commit()
 
-    monkeypatch.setattr("app.services.billing_job.send_email", lambda recipient, subject, body: None)
+    monkeypatch.setattr("app.services.billing_job.send_email", lambda recipient, subject, body, html=None: None)
 
     login_admin = client.post("/auth/login", json={"email": admin_user.email, "password": "admin123"})
     assert login_admin.status_code == 200
