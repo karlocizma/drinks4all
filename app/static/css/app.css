@@ -331,6 +331,7 @@ pre {
   display: none;
 }
 
+/* Login/dashboard inline modal (card style) */
 .modal {
   width: min(560px, 100%);
   max-width: 560px;
@@ -364,6 +365,49 @@ pre {
 
 .modal-actions button + button {
   margin-top: 0.15rem;
+}
+
+/* Admin floating modal panel */
+.modal-panel {
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  width: min(520px, 100%);
+  max-height: min(90vh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
+}
+
+.modal-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modal-hd h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .modal-thumb {
