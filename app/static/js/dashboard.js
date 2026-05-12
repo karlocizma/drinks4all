@@ -158,8 +158,16 @@ if (overflowBtn) {
     e.stopPropagation();
     overflowMenu.style.display = overflowMenu.style.display === 'none' ? 'block' : 'none';
   });
-  document.addEventListener('click', () => {
-    overflowMenu.style.display = 'none';
+  document.addEventListener('click', (e) => {
+    if (!overflowMenu.contains(e.target) && e.target !== overflowBtn) {
+      overflowMenu.style.display = 'none';
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overflowMenu.style.display !== 'none') {
+      overflowMenu.style.display = 'none';
+      overflowBtn.focus();
+    }
   });
 }
 
