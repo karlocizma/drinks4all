@@ -331,6 +331,9 @@ function openDrinkModal(drink) {
   thumb.src = drink.photo_url || '';
   thumb.style.display = drink.photo_url ? '' : 'none';
   updateDrinkActiveLabel(drink.is_active);
+  const modalErr = document.getElementById('drink-modal-error');
+  modalErr.textContent = '';
+  modalErr.style.display = 'none';
   drinkModal.style.display = '';
   lucide.createIcons();
 }
@@ -383,12 +386,16 @@ document.getElementById('drink-delete-btn').addEventListener('click', async () =
   const id = Number(document.getElementById('edit-drink-id').value);
   const drink = drinks.find((d) => d.id === id);
   if (!confirm(`Delete drink ${drink ? drink.name : id}?`)) return;
+  const modalErr = document.getElementById('drink-modal-error');
+  modalErr.textContent = '';
+  modalErr.style.display = 'none';
   try {
     await api(`/admin/drinks/${id}`, { method: 'DELETE' });
     closeDrinkModal();
     await loadDrinks();
   } catch (err) {
-    errorEl.textContent = err.message;
+    modalErr.textContent = err.message;
+    modalErr.style.display = 'block';
   }
 });
 
