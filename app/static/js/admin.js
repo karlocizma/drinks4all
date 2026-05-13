@@ -385,18 +385,34 @@ document.getElementById('drink-save-btn').addEventListener('click', async () => 
 document.getElementById('drink-delete-btn').addEventListener('click', async () => {
   const id = Number(document.getElementById('edit-drink-id').value);
   const drink = drinks.find((d) => d.id === id);
-  if (!confirm(`Delete drink ${drink ? drink.name : id}?`)) return;
   const modalErr = document.getElementById('drink-modal-error');
   modalErr.textContent = '';
   modalErr.style.display = 'none';
-  try {
-    await api(`/admin/drinks/${id}`, { method: 'DELETE' });
-    closeDrinkModal();
-    await loadDrinks();
-  } catch (err) {
-    modalErr.textContent = err.message;
+
+  if (!confirm(`Delete drink "${drink ? drink.name : id}"?`)) return;
+
+  // First attempt — without force, to detect consumption records
+  const probe = await fetch(`/admin/drinks/${id}`, { method: 'DELETE' });
+  if (probe.status === 409) {
+    const count = await probe.json().then((j) => j.detail).catch(() => '?');
+    const word = Number(count) === 1 ? 'record' : 'records';
+    if (!confirm(`This drink has ${count} consumption ${word}.\n\nAll consumption history will be permanently deleted. Continue?`)) return;
+    try {
+      await api(`/admin/drinks/${id}?force=true`, { method: 'DELETE' });
+    } catch (err) {
+      modalErr.textContent = err.message;
+      modalErr.style.display = 'block';
+      return;
+    }
+  } else if (!probe.ok) {
+    const message = await probe.text();
+    modalErr.textContent = message || 'Delete failed.';
     modalErr.style.display = 'block';
+    return;
   }
+
+  closeDrinkModal();
+  await loadDrinks();
 });
 
 // Photo upload for edit modal

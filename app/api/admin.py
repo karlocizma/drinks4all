@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import Response
-from sqlalchemy import select
+from sqlalchemy import delete as sql_delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -12,7 +12,7 @@ from app.api.deps import require_admin
 from app.core.security import get_password_hash
 from app.core.settings import settings
 from app.db.database import get_db
-from app.models import Drink, User, UserRole
+from app.models import Consumption, Drink, User, UserRole
 from app.schemas.admin import PasswordReset, UserCreate, UserUpdate
 from app.schemas.drink import DrinkCreate, DrinkUpdate
 from app.services.billing_job import run_monthly_billing
@@ -225,16 +225,24 @@ def update_drink(
 
 
 @router.delete("/drinks/{drink_id}")
-def delete_drink(drink_id: int, db: Session = Depends(get_db), _: User = Depends(require_admin)) -> dict:
+def delete_drink(
+    drink_id: int,
+    force: bool = Query(False),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> dict:
     drink = db.scalar(select(Drink).where(Drink.id == drink_id))
     if not drink:
         raise HTTPException(status_code=404, detail="Drink not found")
+    consumption_count = db.scalar(
+        select(func.count()).select_from(Consumption).where(Consumption.drink_id == drink_id)
+    )
+    if consumption_count and not force:
+        raise HTTPException(status_code=409, detail=str(consumption_count))
+    if consumption_count:
+        db.execute(sql_delete(Consumption).where(Consumption.drink_id == drink_id))
     db.delete(drink)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=409, detail="Cannot delete drink with linked consumption records")
+    db.commit()
     return {"ok": True}
 
 
