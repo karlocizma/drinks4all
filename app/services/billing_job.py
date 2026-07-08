@@ -41,6 +41,11 @@ def _user_statement_html(
         f'Pay &#x20AC;{total_amount:.2f} with PayPal</a></p>'
     ) if paypal_url else ""
 
+    payment_note = (
+        f'<p style="text-align:center;margin:12px 0 0;font-size:13px;color:#64748b;">'
+        f'Please send payment to: <strong style="color:#0f172a;">{settings.payment_email}</strong></p>'
+    ) if settings.payment_email else ""
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -81,6 +86,7 @@ def _user_statement_html(
     {rows}
     </table>
     {paypal_btn}
+    {payment_note}
   </td></tr>
 
   <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 12px 12px;padding:18px 32px;">
@@ -200,11 +206,13 @@ def run_monthly_billing(db: Session, month: str | None = None, close_month: bool
             f"- {d['drink_name']}: {d['total_units']} units (€{Decimal(d['total_amount']):.2f})"
             for d in row["drinks"]
         ) or "- No drinks consumed"
+        payment_line = f"Please send payment to: {settings.payment_email}\n\n" if settings.payment_email else ""
         body = (
             f"Hello {row['name']},\n\n"
             f"Your drinks summary for {target_month}:\n"
             f"Total units: {row['total_units']}\n"
             f"Total to pay: €{amount:.2f}\n\n"
+            f"{payment_line}"
             f"Breakdown:\n{drink_lines}\n"
         )
         html = _user_statement_html(

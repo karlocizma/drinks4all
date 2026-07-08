@@ -150,16 +150,16 @@ async function loadDrinks() {
     const card = document.createElement('div');
     card.className = 'drink';
     card.dataset.id = d.id;
-    const stockWarn = (d.stock_quantity !== null && d.stock_quantity !== undefined && d.stock_quantity <= d.low_stock_threshold)
-      ? `<div class="drink-warn">&#9888; ${d.stock_quantity} left</div>`
-      : '';
+    const stockClass = d.stock_quantity == null ? 'inf' : (d.stock_quantity <= d.low_stock_threshold ? 'low' : 'ok');
+    const stockLabel = d.stock_quantity == null ? '&#8734;' : `${d.stock_quantity} left`;
+    const stockBadge = `<div class="drink-stock stock-pill ${stockClass}">${stockLabel}</div>`;
     card.innerHTML = `
       <div class="drink-photo"><img src="${d.photo_url || ''}" alt="${d.name}"></div>
       <div class="drink-body">
         <div class="drink-title">${d.name}</div>
         <div class="drink-price">${eur(d.unit_price)}</div>
         <button class="btn btn-primary add-drink-btn" data-id="${d.id}">+1 Drink</button>
-        ${stockWarn}
+        ${stockBadge}
       </div>`;
     card.querySelector('.add-drink-btn').addEventListener('click', () => openDrinkConfirm(d));
     grid.appendChild(card);

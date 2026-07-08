@@ -121,6 +121,7 @@ All settings are in `.env`. A template with every variable and its default is in
 | `SMTP_USE_TLS` | `true` / `false` |
 | `BUYER_REPORT_EMAIL` | One or more comma-separated addresses for the monthly buyer report |
 | `PAYPAL_ME_URL` | Full PayPal.Me URL (e.g. `https://www.paypal.com/paypalme/YOURNAME`). Leave blank to hide the button. |
+| `PAYMENT_EMAIL` | Contact address shown in monthly statement emails so users know where to send payment. |
 | `UPLOAD_DIR` | Directory for uploaded drink images (default: `app/static/uploads`) |
 | `MAX_UPLOAD_MB` | Max image upload size in megabytes |
 

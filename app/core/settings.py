@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     buyer_report_email: str = "buyer@drinks4all.local"
     admin_report_email: str | None = None  # backward-compat with old .env
     paypal_me_url: str = ""
+    payment_email: str = "julian@rycek.de"
 
     upload_dir: str = "app/static/uploads"
     max_upload_mb: int = 5

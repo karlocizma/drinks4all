@@ -171,11 +171,12 @@ button {
   min-height: 44px;
 }
 
-.drink-warn {
-  font-size: 0.75rem;
-  color: #f59e0b;
-  margin-top: 0.35rem;
-  text-align: center;
+.drink-stock {
+  display: block;
+  width: fit-content;
+  margin: 0.35rem auto 0;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
 }
 
 /* View toggle buttons */
@@ -246,8 +247,9 @@ button {
   flex-shrink: 0;
 }
 
-.drink-grid.list-mode .drink-warn {
-  display: none;
+.drink-grid.list-mode .drink-stock {
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .two-col {
