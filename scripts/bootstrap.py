@@ -1,32 +1,23 @@
-from sqlalchemy import select, text
+from pathlib import Path
 
+from alembic.config import Config
+from sqlalchemy import select
+
+from alembic import command
 from app.core.security import get_password_hash
-from app.db.database import Base, SessionLocal, engine
+from app.db.database import SessionLocal
 from app.models import Drink, User, UserRole
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
-def ensure_schema_compat() -> None:
-    statements = [
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_pending_approval BOOLEAN NOT NULL DEFAULT FALSE",
-        "ALTER TABLE billing_periods ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP",
-        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS stock_quantity INTEGER",
-        "ALTER TABLE drinks ADD COLUMN IF NOT EXISTS low_stock_threshold INTEGER NOT NULL DEFAULT 5",
-        "ALTER TABLE consumptions DROP COLUMN IF EXISTS team_id",
-        "ALTER TABLE consumptions DROP COLUMN IF EXISTS fridge_id",
-        "ALTER TABLE drinks DROP COLUMN IF EXISTS team_id",
-        "ALTER TABLE drinks DROP COLUMN IF EXISTS fridge_id",
-        "ALTER TABLE users DROP COLUMN IF EXISTS team_id",
-        "DROP TABLE IF EXISTS fridges CASCADE",
-        "DROP TABLE IF EXISTS teams CASCADE",
-    ]
-    with engine.begin() as conn:
-        for stmt in statements:
-            conn.execute(text(stmt))
+
+def run_migrations() -> None:
+    cfg = Config(str(REPO_ROOT / "alembic.ini"))
+    command.upgrade(cfg, "head")
 
 
 def main() -> None:
-    Base.metadata.create_all(bind=engine)
-    ensure_schema_compat()
+    run_migrations()
     db = SessionLocal()
     try:
         admin = db.scalar(select(User).where(User.email == "admin@drinks.local"))
