@@ -4,6 +4,7 @@ from enum import StrEnum
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.time import utcnow
 from app.db.database import Base
 
 
@@ -23,7 +24,7 @@ class BillingPeriod(Base):
     total_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False, default=0)
     status: Mapped[BillingStatus] = mapped_column(Enum(BillingStatus), nullable=False, default=BillingStatus.OPEN)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
 
     user = relationship("User", back_populates="billing_periods")
 
@@ -37,4 +38,4 @@ class EmailLog(Base):
     month: Mapped[str] = mapped_column(String(7), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     error: Mapped[str | None] = mapped_column(String(2000), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)

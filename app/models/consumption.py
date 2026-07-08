@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.time import utcnow
 from app.db.database import Base
 
 
@@ -17,7 +18,7 @@ class Consumption(Base):
     drink_id: Mapped[int] = mapped_column(ForeignKey("drinks.id"), nullable=False, index=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     unit_price_at_time: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    consumed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    consumed_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False, index=True)
 
     user = relationship("User", back_populates="consumptions")
     drink = relationship("Drink", back_populates="consumptions")

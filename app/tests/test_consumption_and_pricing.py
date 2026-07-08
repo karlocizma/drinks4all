@@ -1,7 +1,6 @@
-from datetime import datetime
-
-from app.models import Drink
 from app.core.settings import settings
+from app.core.time import utcnow
+from app.models import Drink
 from app.services.reporting import close_billing_month, user_month_summary
 
 
@@ -17,7 +16,7 @@ def test_consumption_adds_units_and_total(client, normal_user, db):
     add = client.post("/consumptions", json={"drink_id": drink.id, "quantity": 2})
     assert add.status_code == 200
 
-    current_month = datetime.utcnow().strftime("%Y-%m")
+    current_month = utcnow().strftime("%Y-%m")
     summary = client.get(f"/me/summary?month={current_month}")
     assert summary.status_code == 200
     assert summary.json()["total_units"] == 2
@@ -87,10 +86,10 @@ def test_consumption_is_blocked_for_closed_month(client, normal_user, db):
     db.commit()
     db.refresh(drink)
 
-    summary = user_month_summary(db, normal_user.id, datetime.utcnow().strftime("%Y-%m"))
+    summary = user_month_summary(db, normal_user.id, utcnow().strftime("%Y-%m"))
     close_billing_month(
         db,
-        datetime.utcnow().strftime("%Y-%m"),
+        utcnow().strftime("%Y-%m"),
         [
             {
                 "user_id": normal_user.id,

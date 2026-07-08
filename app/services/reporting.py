@@ -4,9 +4,10 @@ from datetime import datetime
 from decimal import Decimal
 from io import StringIO
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.time import utcnow
 from app.models import BillingPeriod, BillingStatus, Consumption, Drink, EmailLog, User, UserRole
 
 
@@ -209,7 +210,7 @@ def upsert_billing_period(db: Session, user_id: int, month: str, total_amount: D
 def close_billing_month(db: Session, month: str, rows: list[dict] | None = None) -> int:
     user_rows = rows if rows is not None else monthly_user_report_rows(db, month)
     closed = 0
-    now = datetime.utcnow()
+    now = utcnow()
     for row in user_rows:
         period = upsert_billing_period(db, row["user_id"], month, Decimal(row["total_amount"]))
         if period.closed_at is None:
@@ -250,5 +251,7 @@ def reset_billing_month(db: Session, month: str) -> dict:
     }
 
 
-def record_email_log(db: Session, recipient: str, subject: str, month: str, status: str, error: str | None = None) -> None:
+def record_email_log(
+    db: Session, recipient: str, subject: str, month: str, status: str, error: str | None = None
+) -> None:
     db.add(EmailLog(recipient=recipient, subject=subject, month=month, status=status, error=error))
