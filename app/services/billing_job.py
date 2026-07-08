@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.settings import settings
 from app.models import BillingStatus
-from app.services.emailer import parse_recipients, send_email
+from app.services.emailer import parse_recipients, render_email, send_email
 from app.services.reporting import (
     close_billing_month,
     low_stock_rows,
@@ -25,157 +25,42 @@ def _user_statement_html(
     drinks: list[dict],
     paypal_url: str | None,
 ) -> str:
-    rows = "".join(
-        f'<tr>'
-        f'<td style="padding:9px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;">{d["drink_name"]}</td>'
-        f'<td style="padding:9px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;text-align:center;">{d["total_units"]}</td>'
-        f'<td style="padding:9px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;font-weight:600;text-align:right;">&#x20AC;{Decimal(d["total_amount"]):.2f}</td>'
-        f'</tr>'
-        for d in drinks
-    ) if drinks else '<tr><td colspan="3" style="padding:16px 0;color:#64748b;font-size:14px;">No drinks this month.</td></tr>'
-
-    paypal_btn = (
-        f'<p style="text-align:center;margin:24px 0 0;">'
-        f'<a href="{paypal_url}" style="display:inline-block;background:#009cde;color:#ffffff;'
-        f'font-size:15px;font-weight:700;text-decoration:none;padding:13px 32px;border-radius:8px;">'
-        f'Pay &#x20AC;{total_amount:.2f} with PayPal</a></p>'
-    ) if paypal_url else ""
-
-    payment_note = (
-        f'<p style="text-align:center;margin:12px 0 0;font-size:13px;color:#64748b;">'
-        f'Please send payment to: <strong style="color:#0f172a;">{settings.payment_email}</strong></p>'
-    ) if settings.payment_email else ""
-
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f1f5f9">
-<tr><td align="center" style="padding:32px 16px;">
-<table role="presentation" width="100%" style="max-width:560px;" cellpadding="0" cellspacing="0">
-
-  <tr><td bgcolor="#0f172a" style="border-radius:12px 12px 0 0;padding:28px 32px;">
-    <div style="color:#22d3ee;font-size:22px;font-weight:700;letter-spacing:-0.5px;">ALBdrinks</div>
-    <div style="color:#94a3b8;font-size:13px;margin-top:4px;">Monthly Statement &middot; {month}</div>
-  </td></tr>
-
-  <tr><td bgcolor="#ffffff" style="padding:28px 32px;">
-    <p style="margin:0 0 6px;font-size:16px;color:#0f172a;">Hello {name},</p>
-    <p style="margin:0 0 24px;font-size:14px;color:#64748b;">Here is your drinks summary for <strong style="color:#0f172a;">{month}</strong>.</p>
-
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-    <tr>
-      <td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;text-align:center;">
-        <div style="color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Total Drinks</div>
-        <div style="color:#0f172a;font-size:30px;font-weight:700;">{total_units}</div>
-      </td>
-      <td width="12">&nbsp;</td>
-      <td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;text-align:center;">
-        <div style="color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Total Amount</div>
-        <div style="color:#0369a1;font-size:30px;font-weight:700;">&#x20AC;{total_amount:.2f}</div>
-      </td>
-    </tr>
-    </table>
-
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:24px;">
-    <tr>
-      <th style="padding:8px 0;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:left;">Drink</th>
-      <th style="padding:8px 0;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:center;">Units</th>
-      <th style="padding:8px 0;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:right;">Amount</th>
-    </tr>
-    {rows}
-    </table>
-    {paypal_btn}
-    {payment_note}
-  </td></tr>
-
-  <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 12px 12px;padding:18px 32px;">
-    <p style="margin:0;font-size:12px;color:#94a3b8;">ALBdrinks &middot; Internal office drinks tracker</p>
-  </td></tr>
-
-</table>
-</td></tr>
-</table>
-</body></html>"""
+    return render_email(
+        "emails/user_statement.html",
+        name=name,
+        month=month,
+        total_units=total_units,
+        total_amount=f"{total_amount:.2f}",
+        drinks=[
+            {
+                "drink_name": d["drink_name"],
+                "total_units": d["total_units"],
+                "total_amount": f"{Decimal(d['total_amount']):.2f}",
+            }
+            for d in drinks
+        ],
+        paypal_url=paypal_url,
+        payment_email=settings.payment_email,
+    )
 
 
 def _buyer_overview_html(month: str, rows: list[dict], low_stock: list[dict]) -> str:
-    user_rows = "".join(
-        f'<tr>'
-        f'<td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;">{r["name"]}</td>'
-        f'<td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">{r["email"]}</td>'
-        f'<td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;text-align:center;">{r["total_units"]}</td>'
-        f'<td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;font-weight:600;text-align:right;">&#x20AC;{Decimal(r["total_amount"]):.2f}</td>'
-        f'</tr>'
-        for r in rows
-    ) if rows else '<tr><td colspan="4" style="padding:16px 12px;color:#64748b;font-size:14px;">No user activity this month.</td></tr>'
-
     total = sum(Decimal(r["total_amount"]) for r in rows)
-
-    stock_section = ""
-    if low_stock:
-        stock_rows = "".join(
-            f'<tr>'
-            f'<td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;">{s["drink_name"]}</td>'
-            f'<td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;text-align:center;">'
-            f'<span style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600;">'
-            f'{s["stock_quantity"]} left</span></td>'
-            f'<td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:13px;text-align:right;">threshold: {s["low_stock_threshold"]}</td>'
-            f'</tr>'
-            for s in low_stock
-        )
-        stock_section = (
-            '<h3 style="margin:28px 0 12px;font-size:13px;font-weight:600;color:#0f172a;text-transform:uppercase;letter-spacing:.05em;">'
-            '&#9888; Low Stock Alerts</h3>'
-            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">'
-            '<tr>'
-            '<th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:left;">Drink</th>'
-            '<th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:center;">Stock</th>'
-            '<th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:right;">Threshold</th>'
-            '</tr>'
-            + stock_rows
-            + '</table>'
-        )
-
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f1f5f9">
-<tr><td align="center" style="padding:32px 16px;">
-<table role="presentation" width="100%" style="max-width:640px;" cellpadding="0" cellspacing="0">
-
-  <tr><td bgcolor="#0f172a" style="border-radius:12px 12px 0 0;padding:28px 32px;">
-    <div style="color:#22d3ee;font-size:22px;font-weight:700;letter-spacing:-0.5px;">ALBdrinks</div>
-    <div style="color:#94a3b8;font-size:13px;margin-top:4px;">Monthly Overview &middot; {month}</div>
-  </td></tr>
-
-  <tr><td bgcolor="#ffffff" style="padding:28px 32px;">
-    <p style="margin:0 0 20px;font-size:14px;color:#64748b;">Monthly drinks overview for <strong style="color:#0f172a;">{month}</strong>.</p>
-
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:8px;">
-    <tr>
-      <th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:left;">Name</th>
-      <th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:left;">Email</th>
-      <th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:center;">Units</th>
-      <th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:right;">Amount</th>
-    </tr>
-    {user_rows}
-    </table>
-    <p style="margin:8px 0 0;font-size:13px;color:#64748b;text-align:right;">
-      Grand total: <strong style="color:#0369a1;">&#x20AC;{total:.2f}</strong>
-    </p>
-    {stock_section}
-  </td></tr>
-
-  <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 12px 12px;padding:18px 32px;">
-    <p style="margin:0;font-size:12px;color:#94a3b8;">ALBdrinks &middot; Internal office drinks tracker</p>
-  </td></tr>
-
-</table>
-</td></tr>
-</table>
-</body></html>"""
+    return render_email(
+        "emails/buyer_overview.html",
+        month=month,
+        rows=[
+            {
+                "name": r["name"],
+                "email": r["email"],
+                "total_units": r["total_units"],
+                "total_amount": f"{Decimal(r['total_amount']):.2f}",
+            }
+            for r in rows
+        ],
+        total_amount=f"{total:.2f}",
+        low_stock=low_stock,
+    )
 
 
 def previous_month(today: date | None = None) -> str:

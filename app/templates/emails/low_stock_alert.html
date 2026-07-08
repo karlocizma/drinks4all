@@ -1,0 +1,19 @@
+{% extends "emails/_layout.html" %}
+{% set subtitle = "Low Stock Alert" %}
+{% set max_width = 480 %}
+{% set header_padding = "22px 28px" %}
+{% set body_padding = "24px 28px" %}
+{% set footer_padding = "16px 28px" %}
+{% set brand_size = 20 %}
+{% block content %}
+<p style="margin:0 0 4px;font-size:15px;font-weight:600;color:#0f172a;">{{ drink_name }}</p>
+<p style="margin:0 0 20px;font-size:14px;color:#64748b;">Stock has dropped to or below the reorder threshold.</p>
+<table role="presentation" cellpadding="0" cellspacing="0">
+  <tr><td style="padding:5px 0;color:#64748b;font-size:14px;padding-right:28px;">Current stock</td>
+      <td style="padding:5px 0;font-size:14px;font-weight:700;color:#c2410c;">{{ stock_after }}</td></tr>
+  <tr><td style="padding:5px 0;color:#64748b;font-size:14px;padding-right:28px;">Threshold</td>
+      <td style="padding:5px 0;font-size:14px;color:#0f172a;">{{ low_stock_threshold }}</td></tr>
+  <tr><td style="padding:5px 0;color:#64748b;font-size:14px;padding-right:28px;">Price</td>
+      <td style="padding:5px 0;font-size:14px;color:#0f172a;">&#x20AC;{{ unit_price }}</td></tr>
+</table>
+{% endblock %}

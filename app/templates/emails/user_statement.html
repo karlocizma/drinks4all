@@ -1,0 +1,47 @@
+{% extends "emails/_layout.html" %}
+{% set subtitle = "Monthly Statement · " + month %}
+{% set max_width = 560 %}
+{% block content %}
+<p style="margin:0 0 6px;font-size:16px;color:#0f172a;">Hello {{ name }},</p>
+<p style="margin:0 0 24px;font-size:14px;color:#64748b;">Here is your drinks summary for <strong style="color:#0f172a;">{{ month }}</strong>.</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+<tr>
+  <td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;text-align:center;">
+    <div style="color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Total Drinks</div>
+    <div style="color:#0f172a;font-size:30px;font-weight:700;">{{ total_units }}</div>
+  </td>
+  <td width="12">&nbsp;</td>
+  <td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;text-align:center;">
+    <div style="color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Total Amount</div>
+    <div style="color:#0369a1;font-size:30px;font-weight:700;">&#x20AC;{{ total_amount }}</div>
+  </td>
+</tr>
+</table>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:24px;">
+<tr>
+  <th style="padding:8px 0;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:left;">Drink</th>
+  <th style="padding:8px 0;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:center;">Units</th>
+  <th style="padding:8px 0;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:right;">Amount</th>
+</tr>
+{% if drinks %}
+{% for d in drinks %}
+<tr>
+  <td style="padding:9px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;">{{ d.drink_name }}</td>
+  <td style="padding:9px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;text-align:center;">{{ d.total_units }}</td>
+  <td style="padding:9px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;font-weight:600;text-align:right;">&#x20AC;{{ d.total_amount }}</td>
+</tr>
+{% endfor %}
+{% else %}
+<tr><td colspan="3" style="padding:16px 0;color:#64748b;font-size:14px;">No drinks this month.</td></tr>
+{% endif %}
+</table>
+{% if paypal_url %}
+<p style="text-align:center;margin:24px 0 0;">
+  <a href="{{ paypal_url }}" style="display:inline-block;background:#009cde;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:13px 32px;border-radius:8px;">Pay &#x20AC;{{ total_amount }} with PayPal</a></p>
+{% endif %}
+{% if payment_email %}
+<p style="text-align:center;margin:12px 0 0;font-size:13px;color:#64748b;">Please send payment to: <strong style="color:#0f172a;">{{ payment_email }}</strong></p>
+{% endif %}
+{% endblock %}

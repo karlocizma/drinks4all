@@ -1,0 +1,48 @@
+{% extends "emails/_layout.html" %}
+{% set subtitle = "Monthly Overview · " + month %}
+{% set max_width = 640 %}
+{% block content %}
+<p style="margin:0 0 20px;font-size:14px;color:#64748b;">Monthly drinks overview for <strong style="color:#0f172a;">{{ month }}</strong>.</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:8px;">
+<tr>
+  <th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:left;">Name</th>
+  <th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:left;">Email</th>
+  <th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:center;">Units</th>
+  <th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:right;">Amount</th>
+</tr>
+{% if rows %}
+{% for r in rows %}
+<tr>
+  <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;">{{ r.name }}</td>
+  <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">{{ r.email }}</td>
+  <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;text-align:center;">{{ r.total_units }}</td>
+  <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;font-weight:600;text-align:right;">&#x20AC;{{ r.total_amount }}</td>
+</tr>
+{% endfor %}
+{% else %}
+<tr><td colspan="4" style="padding:16px 12px;color:#64748b;font-size:14px;">No user activity this month.</td></tr>
+{% endif %}
+</table>
+<p style="margin:8px 0 0;font-size:13px;color:#64748b;text-align:right;">
+  Grand total: <strong style="color:#0369a1;">&#x20AC;{{ total_amount }}</strong>
+</p>
+{% if low_stock %}
+<h3 style="margin:28px 0 12px;font-size:13px;font-weight:600;color:#0f172a;text-transform:uppercase;letter-spacing:.05em;">&#9888; Low Stock Alerts</h3>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+<tr>
+  <th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:left;">Drink</th>
+  <th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:center;">Stock</th>
+  <th style="padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;text-align:right;">Threshold</th>
+</tr>
+{% for s in low_stock %}
+<tr>
+  <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;">{{ s.drink_name }}</td>
+  <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;text-align:center;">
+    <span style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600;">{{ s.stock_quantity }} left</span></td>
+  <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:13px;text-align:right;">threshold: {{ s.low_stock_threshold }}</td>
+</tr>
+{% endfor %}
+</table>
+{% endif %}
+{% endblock %}

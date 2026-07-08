@@ -1,7 +1,20 @@
 import smtplib
 from email.message import EmailMessage
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.core.settings import settings
+
+_TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
+_email_env = Environment(
+    loader=FileSystemLoader(str(_TEMPLATES_DIR)),
+    autoescape=select_autoescape(["html"]),
+)
+
+
+def render_email(template_name: str, **context) -> str:
+    return _email_env.get_template(template_name).render(**context)
 
 
 def parse_recipients(value: str) -> list[str]:
