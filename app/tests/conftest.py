@@ -13,11 +13,10 @@ os.environ["ENABLE_SCHEDULER"] = "false"
 os.environ["TESTING"] = "true"
 
 from app.api.deps import get_db  # noqa: E402
+from app.core.security import get_password_hash  # noqa: E402
 from app.db.database import Base  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import User, UserRole  # noqa: E402
-from app.core.security import get_password_hash  # noqa: E402
-
 
 TEST_ENGINE = create_engine(
     "sqlite+pysqlite:///:memory:",
