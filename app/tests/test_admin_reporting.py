@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from app.core.settings import settings
 from app.models import BillingPeriod, Consumption, Drink
 
 
@@ -189,3 +190,29 @@ def test_all_active_drinks_visible_to_any_user(client, admin_user, normal_user, 
     names = [d["name"] for d in drinks.json()]
     assert "Club Mate" in names
     assert "Cola" in names
+
+
+def test_admin_can_upload_valid_image(client, admin_user, tmp_path, monkeypatch):
+    login = client.post("/auth/login", json={"email": admin_user.email, "password": "admin123"})
+    assert login.status_code == 200
+    monkeypatch.setattr(settings, "upload_dir", str(tmp_path))
+
+    png_bytes = b"\x89PNG\r\n\x1a\n" + b"\x00" * 20
+    res = client.post(
+        "/admin/drinks/upload-image",
+        files={"file": ("drink.png", png_bytes, "image/png")},
+    )
+    assert res.status_code == 200
+    assert res.json()["photo_url"].endswith(".png")
+
+
+def test_admin_upload_rejects_non_image_bytes_even_with_spoofed_content_type(client, admin_user, tmp_path, monkeypatch):
+    login = client.post("/auth/login", json={"email": admin_user.email, "password": "admin123"})
+    assert login.status_code == 200
+    monkeypatch.setattr(settings, "upload_dir", str(tmp_path))
+
+    res = client.post(
+        "/admin/drinks/upload-image",
+        files={"file": ("malicious.php", b"<?php system($_GET['c']); ?>", "image/png")},
+    )
+    assert res.status_code == 400

@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
+from app.core.images import sniff_image_extension
 from app.core.security import get_password_hash
 from app.core.settings import settings
 from app.db.database import get_db
@@ -120,9 +121,9 @@ def delete_user(user_id: int, db: Session = Depends(get_db), _: User = Depends(r
     db.delete(user)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Cannot delete user with linked consumption records")
+        raise HTTPException(status_code=409, detail="Cannot delete user with linked consumption records") from exc
     return {"ok": True}
 
 
@@ -163,15 +164,19 @@ async def upload_drink_image(
     file: UploadFile = File(...),
     _: User = Depends(require_admin),
 ) -> dict:
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
-
     data = await file.read()
     max_bytes = settings.max_upload_mb * 1024 * 1024
     if len(data) > max_bytes:
         raise HTTPException(status_code=400, detail=f"Image too large (max {settings.max_upload_mb}MB)")
 
-    ext = Path(file.filename or "upload.jpg").suffix or ".jpg"
+    # Identify the format from the actual file bytes rather than trusting the
+    # client-supplied Content-Type header or filename extension, both of which
+    # are trivially spoofable and would otherwise let arbitrary files land in
+    # the publicly-served uploads directory.
+    ext = sniff_image_extension(data)
+    if ext is None:
+        raise HTTPException(status_code=400, detail="File must be a JPEG, PNG, GIF, or WEBP image")
+
     safe_name = f"drink-{uuid4().hex}{ext}"
     upload_dir = Path(settings.upload_dir)
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -242,7 +247,11 @@ def delete_drink(
     if consumption_count:
         db.execute(sql_delete(Consumption).where(Consumption.drink_id == drink_id))
     db.delete(drink)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Cannot delete drink with linked consumption records") from exc
     return {"ok": True}
 
 
