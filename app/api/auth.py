@@ -21,13 +21,15 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive")
 
-    expires_minutes = settings.remember_me_days * 24 * 60 if payload.remember_me else settings.access_token_expire_minutes
+    expires_minutes = (
+        settings.remember_me_days * 24 * 60 if payload.remember_me else settings.access_token_expire_minutes
+    )
     token = create_access_token(str(user.id), user.role.value, expires_minutes=expires_minutes)
     response.set_cookie(
         key="access_token",
         value=token,
         httponly=True,
-        secure=False,
+        secure=settings.cookie_secure,
         samesite="lax",
         max_age=expires_minutes * 60,
     )

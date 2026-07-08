@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 8
     remember_me_days: int = 30
+    cookie_secure: bool = False
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/drinks4all"
     timezone: str = "Europe/Berlin"
