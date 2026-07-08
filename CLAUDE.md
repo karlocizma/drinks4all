@@ -18,16 +18,20 @@ docker compose up --build -d      # app: :8000, MailHog UI: :8025
 # Dev server (native)
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python -m scripts.bootstrap        # create tables, apply schema-compat ALTERs, seed admin + sample drinks
+python -m scripts.bootstrap        # apply Alembic migrations, seed admin + sample drinks
 uvicorn app.main:app --reload
 
 # Tests (no DB needed — in-memory SQLite)
 pytest
 pytest app/tests/test_auth_and_roles.py
 pytest -k "test_run_billing"
+
+# Lint
+ruff check .
+ruff check . --fix
 ```
 
-There is no lint/format/type-check command configured in this repo — none of ruff/black/mypy are in `requirements.txt`.
+There is no type-check command configured in this repo (no mypy in `requirements.txt`); ruff is the only linter.
 
 Default seeded admin: `admin@drinks.local` / `admin123`.
 
@@ -35,9 +39,11 @@ Default seeded admin: `admin@drinks.local` / `admin123`.
 
 **Layering:** `app/api/*.py` (FastAPI routers, one file per concern: `auth`, `user`, `admin`, `web`) → `app/services/*.py` (business logic: `billing_job`, `reporting`, `emailer`) → `app/models/*.py` (SQLAlchemy 2.0 declarative models). `app/schemas/*.py` holds Pydantic request/response models. Routers do light DB queries directly for simple CRUD; anything involving money math, month-bucketing, or cross-table aggregation lives in `app/services/reporting.py` and is reused by both the `/me/summary` endpoint and the monthly billing job.
 
-**Auth:** JWT is issued in `app/core/security.py` and carried in an **httponly cookie** named `access_token` (not an Authorization header). `app/api/deps.py` provides `get_current_user` (reads the cookie, decodes JWT, loads the user) and `require_admin` (wraps it with a role check). All protected routes depend on one of these.
+**Auth:** JWT is issued in `app/core/security.py` and carried in an **httponly cookie** named `access_token` (not an Authorization header). `app/api/deps.py` provides `get_current_user` (reads the cookie, decodes JWT, loads the user) and `require_admin` (wraps it with a role check). All protected routes depend on one of these. The cookie's `Secure` flag is controlled by `settings.cookie_secure` (`COOKIE_SECURE` env var, default `false`) — set it `true` once the app is behind HTTPS.
 
-**No Alembic migrations despite being a dependency.** Schema evolution is done via idempotent `ALTER TABLE ... ADD/DROP COLUMN IF NOT EXISTS` statements in a function called `ensure_schema_compat()`, which is **duplicated** in both `app/main.py` (runs on app startup) and `scripts/bootstrap.py` (runs on manual bootstrap / Docker entrypoint). If you add or rename a model column, add a matching `ALTER TABLE` statement to **both** copies of `ensure_schema_compat()` — SQLite test/dev setups use `Base.metadata.create_all` so they don't need it, but the Postgres deployment path does since the tables already exist there.
+**Image uploads** (`POST /admin/drinks/upload-image`) are validated by sniffing magic bytes (`app/core/images.sniff_image_extension`), not by trusting the client-supplied `Content-Type` header or filename extension — both are spoofable and the old behavior let arbitrary file extensions land in the publicly-served `app/static/uploads/` directory.
+
+**Schema migrations use Alembic** (`alembic/`, config in `alembic.ini`). `alembic/env.py` pulls the DB URL from `app.core.settings.settings.database_url` and `target_metadata` from `Base.metadata` (via `app.models`) — there's no separate hardcoded URL to keep in sync. `scripts/bootstrap.py` runs `alembic upgrade head` before seeding; app startup (`app/main.py`) deliberately does **not** run migrations (to avoid multiple worker processes racing to apply DDL concurrently). After changing a model, run `alembic revision --autogenerate -m "..."`, review the generated file, and commit it. The initial migration (`alembic/versions/9ad0738c4ed1_initial_schema.py`) is a special case: it calls `Base.metadata.create_all(checkfirst=True)` directly instead of hand-written `op.create_table()` calls, specifically so it's a safe no-op against any database that already has this schema (i.e. every currently-deployed instance) — do not copy that pattern for future migrations, which should use the normal explicit `op.*` autogenerate output.
 
 **Settings** (`app/core/settings.py`) load from `.env` via `pydantic-settings`. Note the backward-compat shim at module load: if `admin_report_email` (an old, removed env var) is set and `buyer_report_email` is still at its default, it overwrites `buyer_report_email`.
 
@@ -47,7 +53,7 @@ Default seeded admin: `admin@drinks.local` / `admin123`.
 
 **Stock tracking:** `Drink.stock_quantity` is decremented on `POST /consumptions` and restored on undo/delete/reset. Crossing `low_stock_threshold` triggers an immediate low-stock email (`app/api/user.py:notify_low_stock`) independent of the monthly buyer digest.
 
-**Email:** `app/services/emailer.py` sends directly via `smtplib` (no templating engine, no queue) — HTML bodies are hand-built f-strings inline in `billing_job.py` and `user.py`. MailHog is used as the local SMTP catcher in Docker Compose.
+**Email:** `app/services/emailer.py` sends directly via `smtplib` (no queue) and exposes `render_email(template_name, **context)`, a small Jinja2 environment scoped to `app/templates/` (autoescaping on, since these values include user-entered names/drink names). HTML bodies live in `app/templates/emails/` (`user_statement.html`, `buyer_overview.html`, `low_stock_alert.html`), all extending `emails/_layout.html` for the shared header/footer chrome; `billing_job.py`/`user.py` pass pre-formatted `f"{amount:.2f}"` strings into the template context rather than formatting Decimals inside Jinja, to avoid float-rounding drift. MailHog is used as the local SMTP catcher in Docker Compose. The statement email includes `settings.payment_email` so recipients know where to send payment.
 
 **Reports:** `GET /admin/reports?month=YYYY-MM&format=json|csv|pdf` — CSV built manually in `reporting.build_csv`; PDF via `fpdf2` in `reporting.build_pdf` (has a `new_x/new_y` vs `ln=1` fallback for older fpdf API compat).
 

@@ -79,11 +79,13 @@ cp .env.example .env
 
 ### 4. Bootstrap the database
 
-Creates all tables, applies schema migrations, and seeds the admin account and sample drinks:
+Applies all Alembic migrations (creating tables on a fresh database, or bringing an existing one up to date) and seeds the admin account and sample drinks:
 
 ```bash
 python -m scripts.bootstrap
 ```
+
+Run this again after every `git pull` that includes new migrations — it's always safe to re-run.
 
 ### 5. Run the app
 
@@ -113,6 +115,7 @@ All settings are in `.env`. A template with every variable and its default is in
 | `DATABASE_URL` | SQLAlchemy connection string |
 | `TIMEZONE` | Scheduler timezone (e.g. `Europe/Berlin`) |
 | `REMEMBER_ME_DAYS` | Session cookie lifetime when "Remember me" is checked |
+| `COOKIE_SECURE` | Set to `true` once the app is served over HTTPS, so the auth cookie only travels encrypted. Keep `false` for plain-HTTP local/dev setups. |
 | `SMTP_HOST` | SMTP server hostname |
 | `SMTP_PORT` | SMTP port (1025 for MailHog, 465/587 for real providers) |
 | `SMTP_SENDER` | From address for all outgoing emails |
@@ -160,6 +163,24 @@ When `PAYPAL_ME_URL` is set, users see a **Pay with PayPal** button on the dashb
 | `POST` | `/admin/users/{id}/reset-password` | Reset user password |
 | `GET` | `/admin/reports?month=YYYY-MM` | Monthly report (JSON / CSV / PDF) |
 | `POST` | `/admin/run-billing?month=YYYY-MM` | Trigger billing run |
+
+---
+
+## Database Migrations
+
+Schema changes are managed with Alembic (`alembic/`). `python -m scripts.bootstrap` always applies pending migrations before seeding, and the Docker image runs it automatically on every container start — so a normal `git pull` + redeploy picks up new migrations with no manual step.
+
+After changing a model in `app/models/`, generate a migration and commit it alongside your model change:
+
+```bash
+alembic revision --autogenerate -m "describe the change"
+```
+
+Always review the generated file before committing — autogenerate is a good first draft, not a guarantee (it won't detect every kind of change, e.g. renamed columns show up as a drop + add). Apply it locally with:
+
+```bash
+alembic upgrade head
+```
 
 ---
 
@@ -214,6 +235,15 @@ No running database is required — tests use an in-memory SQLite database.
 pytest                                           # all tests
 pytest app/tests/test_auth_and_roles.py          # single file
 pytest -k "test_run_billing"                     # single test by name
+```
+
+---
+
+## Linting
+
+```bash
+ruff check .          # lint
+ruff check . --fix    # lint and auto-fix what's safe to fix
 ```
 
 ---
