@@ -6,6 +6,7 @@ from app.core.security import (
     get_password_hash,
     password_fingerprint,
 )
+from app.models import User, UserRole
 
 
 def test_password_fingerprint_is_deterministic_and_hash_specific():
@@ -40,3 +41,47 @@ def test_decode_password_reset_token_rejects_wrong_purpose():
 
     with pytest.raises(ValueError):
         decode_password_reset_token(token)
+
+
+def test_forgot_password_sends_email_for_existing_active_user(client, normal_user, monkeypatch):
+    sent = []
+    monkeypatch.setattr("app.api.auth.send_email", lambda *a, **k: sent.append(a))
+
+    res = client.post("/auth/forgot-password", json={"email": normal_user.email})
+
+    assert res.status_code == 200
+    assert res.json() == {"ok": True, "message": "If that email exists, a reset link has been sent."}
+    assert len(sent) == 1
+
+
+def test_forgot_password_generic_response_for_unknown_email(client, monkeypatch):
+    sent = []
+    monkeypatch.setattr("app.api.auth.send_email", lambda *a, **k: sent.append(a))
+
+    res = client.post("/auth/forgot-password", json={"email": "nobody@example.com"})
+
+    assert res.status_code == 200
+    assert res.json() == {"ok": True, "message": "If that email exists, a reset link has been sent."}
+    assert len(sent) == 0
+
+
+def test_forgot_password_generic_response_for_pending_user(client, db, monkeypatch):
+    pending = User(
+        name="Pending",
+        email="pending@test.local",
+        password_hash=get_password_hash("whatever123"),
+        role=UserRole.USER,
+        is_active=False,
+        is_pending_approval=True,
+    )
+    db.add(pending)
+    db.commit()
+
+    sent = []
+    monkeypatch.setattr("app.api.auth.send_email", lambda *a, **k: sent.append(a))
+
+    res = client.post("/auth/forgot-password", json={"email": "pending@test.local"})
+
+    assert res.status_code == 200
+    assert res.json() == {"ok": True, "message": "If that email exists, a reset link has been sent."}
+    assert len(sent) == 0

@@ -1,12 +1,22 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.security import create_access_token, get_password_hash, verify_password
+from app.core.security import (
+    create_access_token,
+    create_password_reset_token,
+    get_password_hash,
+    verify_password,
+)
 from app.core.settings import settings
 from app.db.database import get_db
 from app.models import User, UserRole
-from app.schemas.auth import LoginRequest, RegisterRequest, UserOut
+from app.schemas.auth import ForgotPasswordRequest, LoginRequest, RegisterRequest, UserOut
+from app.services.emailer import render_email, send_email
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -62,3 +72,32 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> dict:
     db.add(user)
     db.commit()
     return {"ok": True, "message": "Registration submitted. Wait for admin approval."}
+
+
+@router.post("/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)) -> dict:
+    generic_response = {"ok": True, "message": "If that email exists, a reset link has been sent."}
+
+    user = db.scalar(select(User).where(User.email == payload.email))
+    if user is None or not user.is_active:
+        return generic_response
+
+    token = create_password_reset_token(str(user.id), user.password_hash)
+    reset_link = f"{settings.app_base_url.rstrip('/')}/?reset_token={token}"
+    body = (
+        "We received a request to reset your ALBdrinks password.\n\n"
+        f"Reset link (expires in {settings.password_reset_expire_minutes} minutes):\n{reset_link}\n\n"
+        "If you didn't request this, you can safely ignore this email.\n"
+    )
+    html = render_email(
+        "emails/password_reset.html",
+        reset_link=reset_link,
+        expires_minutes=settings.password_reset_expire_minutes,
+    )
+
+    try:
+        send_email(user.email, "Reset your ALBdrinks password", body, html=html)
+    except Exception:
+        logger.warning("Failed to send password reset email to %s", user.email, exc_info=True)
+
+    return generic_response
