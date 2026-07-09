@@ -116,6 +116,8 @@ All settings are in `.env`. A template with every variable and its default is in
 | `TIMEZONE` | Scheduler timezone (e.g. `Europe/Berlin`) |
 | `REMEMBER_ME_DAYS` | Session cookie lifetime when "Remember me" is checked |
 | `COOKIE_SECURE` | Set to `true` once the app is served over HTTPS, so the auth cookie only travels encrypted. Keep `false` for plain-HTTP local/dev setups. |
+| `APP_BASE_URL` | Base URL used to build the password-reset link sent by email (e.g. `https://drinks.example.com`). |
+| `PASSWORD_RESET_EXPIRE_MINUTES` | How long a password-reset link stays valid. |
 | `SMTP_HOST` | SMTP server hostname |
 | `SMTP_PORT` | SMTP port (1025 for MailHog, 465/587 for real providers) |
 | `SMTP_SENDER` | From address for all outgoing emails |
@@ -142,6 +144,8 @@ When `PAYPAL_ME_URL` is set, users see a **Pay with PayPal** button on the dashb
 |---|---|---|
 | `POST` | `/auth/login` | Log in |
 | `POST` | `/auth/register` | Self-register (pending admin approval) |
+| `POST` | `/auth/forgot-password` | Request a password reset email (always returns a generic response) |
+| `POST` | `/auth/reset-password` | Reset password using the token from that email |
 | `POST` | `/auth/logout` | Log out |
 | `GET` | `/me` | Current user info (id, name, email) |
 | `POST` | `/me/change-password` | Change own password |
