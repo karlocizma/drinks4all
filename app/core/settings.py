@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 8
     remember_me_days: int = 30
     cookie_secure: bool = False
+    app_base_url: str = "http://localhost:8000"
+    password_reset_expire_minutes: int = 30
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/drinks4all"
     timezone: str = "Europe/Berlin"
