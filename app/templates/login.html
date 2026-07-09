@@ -9,7 +9,7 @@
 </head>
 <body>
   <main class="container auth-shell">
-    <section class="card">
+    <section class="card" id="login-card">
       <img src="/static/logo-wordmark.svg" alt="ALBdrinks" style="height:52px;display:block;margin:0 auto 0.5rem;" />
       <p>Sign in with your assigned account.</p>
       <form id="login-form" class="grid">
@@ -21,7 +21,20 @@
         <button type="submit" form="login-form">Login</button>
         <button type="button" id="open-register-modal">Create Account</button>
       </div>
+      <p><button type="button" id="open-forgot-password-modal" class="link-button">Forgot password?</button></p>
       <p id="error" class="error"></p>
+    </section>
+
+    <section class="card hidden" id="reset-password-card" hidden>
+      <img src="/static/logo-wordmark.svg" alt="ALBdrinks" style="height:52px;display:block;margin:0 auto 0.5rem;" />
+      <p>Choose a new password.</p>
+      <form id="reset-password-form" class="grid">
+        <label>New password <input type="password" id="reset-new-password" autocomplete="new-password" required /></label>
+      </form>
+      <div class="login-actions">
+        <button type="submit" form="reset-password-form">Set new password</button>
+      </div>
+      <p id="reset-error" class="error"></p>
     </section>
   </main>
 
@@ -40,6 +53,23 @@
           <button type="button" id="close-register-modal" class="btn-secondary">Close</button>
         </div>
       </form>
+    </section>
+  </div>
+
+  <div id="forgot-password-modal" class="modal-backdrop hidden" hidden>
+    <section class="card modal">
+      <div class="modal-head">
+        <h3>Reset your password</h3>
+      </div>
+      <p>Enter your account email and we'll send you a reset link.</p>
+      <form id="forgot-password-form" class="grid compact-form">
+        <label>Email <input type="email" id="forgot-email" required /></label>
+        <div class="modal-actions">
+          <button type="submit">Send reset link</button>
+          <button type="button" id="close-forgot-password-modal" class="btn-secondary">Close</button>
+        </div>
+      </form>
+      <p id="forgot-password-message"></p>
     </section>
   </div>
 
