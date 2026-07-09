@@ -1,6 +1,7 @@
 import pytest
 
 from app.core.security import (
+    create_access_token,
     create_password_reset_token,
     decode_password_reset_token,
     get_password_hash,
@@ -85,3 +86,45 @@ def test_forgot_password_generic_response_for_pending_user(client, db, monkeypat
     assert res.status_code == 200
     assert res.json() == {"ok": True, "message": "If that email exists, a reset link has been sent."}
     assert len(sent) == 0
+
+
+def test_reset_password_succeeds_and_allows_login_with_new_password(client, normal_user):
+    token = create_password_reset_token(str(normal_user.id), normal_user.password_hash)
+
+    res = client.post("/auth/reset-password", json={"token": token, "new_password": "newpass123"})
+    assert res.status_code == 200
+    assert res.json() == {"ok": True}
+
+    login = client.post("/auth/login", json={"email": normal_user.email, "password": "newpass123"})
+    assert login.status_code == 200
+
+
+def test_reset_password_rejects_expired_token(client, normal_user):
+    token = create_password_reset_token(str(normal_user.id), normal_user.password_hash, expires_minutes=-1)
+
+    res = client.post("/auth/reset-password", json={"token": token, "new_password": "newpass123"})
+    assert res.status_code == 400
+
+
+def test_reset_password_rejects_wrong_purpose_token(client, normal_user):
+    token = create_access_token(str(normal_user.id), normal_user.role.value)
+
+    res = client.post("/auth/reset-password", json={"token": token, "new_password": "newpass123"})
+    assert res.status_code == 400
+
+
+def test_reset_password_rejects_reused_token_after_password_changed(client, normal_user):
+    token = create_password_reset_token(str(normal_user.id), normal_user.password_hash)
+
+    first = client.post("/auth/reset-password", json={"token": token, "new_password": "firstpass123"})
+    assert first.status_code == 200
+
+    second = client.post("/auth/reset-password", json={"token": token, "new_password": "secondpass123"})
+    assert second.status_code == 400
+
+
+def test_reset_password_rejects_short_new_password(client, normal_user):
+    token = create_password_reset_token(str(normal_user.id), normal_user.password_hash)
+
+    res = client.post("/auth/reset-password", json={"token": token, "new_password": "abc"})
+    assert res.status_code == 400

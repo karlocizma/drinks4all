@@ -7,13 +7,15 @@ from sqlalchemy.orm import Session
 from app.core.security import (
     create_access_token,
     create_password_reset_token,
+    decode_password_reset_token,
     get_password_hash,
+    password_fingerprint,
     verify_password,
 )
 from app.core.settings import settings
 from app.db.database import get_db
 from app.models import User, UserRole
-from app.schemas.auth import ForgotPasswordRequest, LoginRequest, RegisterRequest, UserOut
+from app.schemas.auth import ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, UserOut
 from app.services.emailer import render_email, send_email
 
 logger = logging.getLogger(__name__)
@@ -101,3 +103,22 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
         logger.warning("Failed to send password reset email to %s", user.email, exc_info=True)
 
     return generic_response
+
+
+@router.post("/reset-password")
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)) -> dict:
+    try:
+        user_id, pwd_fp = decode_password_reset_token(payload.token)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link") from exc
+
+    user = db.scalar(select(User).where(User.id == user_id))
+    if user is None or password_fingerprint(user.password_hash) != pwd_fp:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+    if len(payload.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+
+    user.password_hash = get_password_hash(payload.new_password)
+    db.commit()
+    return {"ok": True}
